@@ -218,6 +218,10 @@ def ensemble_forecast(data, periods=10):
 # ============================================
 
 nhe = load_data()
+# Asegurar que Year esté limpio y numérico
+nhe["Year"] = pd.to_numeric(nhe["Year"], errors="coerce")
+nhe = nhe.dropna(subset=["Year"])
+nhe["Year"] = nhe["Year"].astype(int)
 
 # ============================================
 # HEADER Y CONTEXTO PRINCIPAL
