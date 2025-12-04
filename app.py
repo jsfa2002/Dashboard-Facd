@@ -67,38 +67,62 @@ def load_data():
     df.columns = df.columns.str.strip()
     df.rename(columns={df.columns[0]: "Expenditure_Type"}, inplace=True)
 
-    # --- Eliminar filas irrelevantes ---
+    # --- Eliminar filas irrelevantes PERO MANTENER las categorías importantes ---
     df = df[df["Expenditure_Type"].notna()]
-    df = df[~df["Expenditure_Type"].str.contains("Source|Table|Funds|Expenditures|Type|NATIONAL", case=False, na=False)]
+    
+    # Solo eliminar filas que sean claramente notas o headers, NO las categorías de datos
+    df = df[~df["Expenditure_Type"].str.contains("^Source|^Table|^NOTE:|^Funds", case=False, na=False, regex=True)]
 
     # --- Transformar formato ancho a largo ---
     df_melt = df.melt(id_vars=["Expenditure_Type"], var_name="Year", value_name="Amount")
 
     # --- Limpiar columna Year ---
-    df_melt["Year"] = df_melt["Year"].str.extract(r"(\d{4})")  # extrae solo el año (1960, 2023, etc.)
+    df_melt["Year"] = df_melt["Year"].astype(str).str.extract(r"(\d{4})", expand=False)
     df_melt["Year"] = pd.to_numeric(df_melt["Year"], errors="coerce")
 
     # --- Limpiar y convertir montos ---
     df_melt["Amount"] = (
         df_melt["Amount"]
         .astype(str)
-        .str.replace(",", "")
-        .str.replace("-", "0")
-        .str.extract(r"([0-9]+\.?[0-9]*)")[0]
-        .astype(float)
+        .str.replace(",", "", regex=False)
+        .str.replace("$", "", regex=False)
+        .str.replace("-", "0", regex=False)
     )
+    
+    # Extraer solo números (incluyendo decimales)
+    df_melt["Amount"] = pd.to_numeric(df_melt["Amount"].str.extract(r"([0-9]+\.?[0-9]*)", expand=False)[0], errors="coerce")
 
     # --- Quitar valores nulos ---
     df_melt = df_melt.dropna(subset=["Year", "Amount"])
 
-    # --- Agrupar por año y tipo ---
+    # --- Agrupar por año y tipo (por si hay duplicados) ---
     df_melt = df_melt.groupby(["Expenditure_Type", "Year"], as_index=False)["Amount"].sum()
 
     # --- Asegurar que Year sea entera y ordenada ---
     df_melt["Year"] = df_melt["Year"].astype(int)
-    df_melt = df_melt.sort_values("Year")
+    df_melt = df_melt.sort_values(["Expenditure_Type", "Year"])
 
     return df_melt
+Y ahora, en la sección del Primer Reto, reemplaza la parte de búsqueda de categoría con esto más simple:
+python# Filtrar datos del Total NHE
+st.write("**Debug: Primeras 10 categorías disponibles:**")
+st.code("\n".join(filtered["Expenditure_Type"].unique()[:10]))
+
+# Buscar "Total National Health Expenditures" de forma exacta primero
+total = filtered[filtered["Expenditure_Type"] == "Total National Health Expenditures"].copy()
+
+# Si no encuentra, buscar de forma flexible
+if len(total) == 0:
+    total = filtered[filtered["Expenditure_Type"].str.contains("Total National Health", case=False, na=False)].copy()
+
+# Si aún no encuentra, mostrar error
+if len(total) == 0:
+    st.error(" No se encontró la categoría 'Total National Health Expenditures'.")
+    st.write("**Todas las categorías disponibles:**")
+    st.dataframe(pd.DataFrame({"Categoría": filtered["Expenditure_Type"].unique()}))
+    st.stop()
+else:
+    st.success(f"✓ Categoría encontrada: {total['Expenditure_Type'].iloc[0]} ({len(total)} 
 
 
 
