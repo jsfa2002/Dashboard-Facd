@@ -167,4 +167,5 @@ El diagnóstico de datos muestra buena calidad general, aunque existen faltantes
 """)
 
 st.markdown("---")
-st.caption("Desarrollado por: [Tu Nombre] - Fundamentos para el Análisis de Datos (FACD) - 2025")
+st.caption("Desarrollado por: Juan Sebastián Fajardo Acevedo - Fundamentos para el Análisis de Datos (FACD) - 2025")
+
