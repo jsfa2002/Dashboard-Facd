@@ -14,7 +14,7 @@ Fuente oficial: [CMS.gov - National Health Expenditure Accounts](https://www.cms
 # --- Cargar datos ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/NHE_TypeOfService_SourceOfFunds_1960_2023.csv")
+    df = pd.read_csv("nhe2023/NHE2023.csv")
     return df
 
 nhe = load_data()
