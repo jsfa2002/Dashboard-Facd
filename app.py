@@ -52,7 +52,9 @@ st.markdown("""
 # ============================================
 @st.cache_data
 def load_data():
-    """Carga y preprocesa los datos del NHE"""
+    """Carga, limpia y estructura los datos NHE correctamente"""
+    import pandas as pd
+
     try:
         df = pd.read_csv("nhe2023/NHE2023.csv", encoding="latin1", skiprows=1)
     except UnicodeDecodeError:
@@ -60,34 +62,44 @@ def load_data():
     except FileNotFoundError:
         st.error("Error: No se encontró el archivo NHE2023.csv")
         st.stop()
-    
+
+    # --- Normalizar columnas ---
     df.columns = df.columns.str.strip()
     df.rename(columns={df.columns[0]: "Expenditure_Type"}, inplace=True)
 
-    # --- LIMPIEZA EXTRA: eliminar encabezados intermedios y filas vacías ---
+    # --- Eliminar filas irrelevantes ---
     df = df[df["Expenditure_Type"].notna()]
-    df = df[~df["Expenditure_Type"].str.contains("Source|Table|Funds|Expenditures|Type", case=False, na=False)]
-    
-    # Transformar de formato ancho a largo
+    df = df[~df["Expenditure_Type"].str.contains("Source|Table|Funds|Expenditures|Type|NATIONAL", case=False, na=False)]
+
+    # --- Transformar formato ancho a largo ---
     df_melt = df.melt(id_vars=["Expenditure_Type"], var_name="Year", value_name="Amount")
-    
-    # Limpiar y convertir datos
+
+    # --- Limpiar columna Year ---
+    df_melt["Year"] = df_melt["Year"].str.extract(r"(\d{4})")  # extrae solo el año (1960, 2023, etc.)
     df_melt["Year"] = pd.to_numeric(df_melt["Year"], errors="coerce")
+
+    # --- Limpiar y convertir montos ---
     df_melt["Amount"] = (
         df_melt["Amount"]
         .astype(str)
         .str.replace(",", "")
         .str.replace("-", "0")
-        .str.extract(r"([0-9]+\\.?[0-9]*)")[0]
+        .str.extract(r"([0-9]+\.?[0-9]*)")[0]
         .astype(float)
     )
-    
+
+    # --- Quitar valores nulos ---
     df_melt = df_melt.dropna(subset=["Year", "Amount"])
 
-    # --- AGRUPAR POR AÑO Y TIPO para eliminar duplicados ---
+    # --- Agrupar por año y tipo ---
     df_melt = df_melt.groupby(["Expenditure_Type", "Year"], as_index=False)["Amount"].sum()
-    
+
+    # --- Asegurar que Year sea entera y ordenada ---
+    df_melt["Year"] = df_melt["Year"].astype(int)
+    df_melt = df_melt.sort_values("Year")
+
     return df_melt
+
 
 
 def prepare_time_series(data, fill_missing=True):
@@ -218,10 +230,11 @@ def ensemble_forecast(data, periods=10):
 # ============================================
 
 nhe = load_data()
-# Asegurar que Year esté limpio y numérico
-nhe["Year"] = pd.to_numeric(nhe["Year"], errors="coerce")
-nhe = nhe.dropna(subset=["Year"])
-nhe["Year"] = nhe["Year"].astype(int)
+
+if nhe.empty:
+    st.error("El dataset está vacío. Verifica que el archivo CSV esté bien estructurado.")
+    st.stop()
+
 
 # ============================================
 # HEADER Y CONTEXTO PRINCIPAL
