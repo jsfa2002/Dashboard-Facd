@@ -54,7 +54,7 @@ st.markdown("""
 def load_data():
     """Carga, limpia y estructura los datos NHE correctamente"""
     import pandas as pd
-
+    
     try:
         df = pd.read_csv("nhe2023/NHE2023.csv", encoding="latin1", skiprows=1)
     except UnicodeDecodeError:
@@ -62,22 +62,36 @@ def load_data():
     except FileNotFoundError:
         st.error("Error: No se encontró el archivo NHE2023.csv")
         st.stop()
-
+    
+    #  DEBUG 1: Ver primeras filas crudas
+    st.sidebar.write("###  DEBUG: Datos Crudos")
+    st.sidebar.write(f"**Columnas detectadas:** {len(df.columns)}")
+    st.sidebar.write(f"**Primeras columnas:** {df.columns[:5].tolist()}")
+    st.sidebar.dataframe(df.head(3))
+    
     # --- Normalizar columnas ---
     df.columns = df.columns.str.strip()
     df.rename(columns={df.columns[0]: "Expenditure_Type"}, inplace=True)
-
+    
     # --- Eliminar filas irrelevantes ---
     df = df[df["Expenditure_Type"].notna()]
     df = df[~df["Expenditure_Type"].str.contains("^Source|^Table|^NOTE:|^Funds", case=False, na=False, regex=True)]
-
+    
+    #  DEBUG 2: Ver datos después de limpieza
+    st.sidebar.write(f"**Filas después de limpieza:** {len(df)}")
+    
     # --- Transformar formato ancho a largo ---
     df_melt = df.melt(id_vars=["Expenditure_Type"], var_name="Year", value_name="Amount")
-
+    
+    #  DEBUG 3: Ver datos después de melt
+    st.sidebar.write(f"**Registros después de melt:** {len(df_melt)}")
+    st.sidebar.write("**Muestra después de melt:**")
+    st.sidebar.dataframe(df_melt.head(10))
+    
     # --- Limpiar columna Year ---
     df_melt["Year"] = df_melt["Year"].astype(str).str.extract(r"(\d{4})", expand=False)
     df_melt["Year"] = pd.to_numeric(df_melt["Year"], errors="coerce")
-
+    
     # --- Limpiar y convertir montos ---
     df_melt["Amount"] = (
         df_melt["Amount"]
@@ -87,19 +101,48 @@ def load_data():
         .str.replace("-", "0", regex=False)
     )
     
-    df_melt["Amount"] = pd.to_numeric(df_melt["Amount"].str.extract(r"([0-9]+\.?[0-9]*)", expand=False)[0], errors="coerce")
-
+    df_melt["Amount"] = pd.to_numeric(
+        df_melt["Amount"].str.extract(r"([0-9]+\.?[0-9]*)", expand=False)[0], 
+        errors="coerce"
+    )
+    
+    #  DEBUG 4: Ver conversión de montos
+    st.sidebar.write("**Muestra después de limpiar montos:**")
+    sample = df_melt[df_melt["Expenditure_Type"].str.contains("Total National", na=False)].head(10)
+    st.sidebar.dataframe(sample)
+    
     # --- Quitar valores nulos ---
     df_melt = df_melt.dropna(subset=["Year", "Amount"])
-
+    
     # --- **CRÍTICO: Eliminar duplicados ANTES de agrupar** ---
+    duplicates_before = len(df_melt)
     df_melt = df_melt.drop_duplicates(subset=["Expenditure_Type", "Year"], keep="first")
-
+    duplicates_removed = duplicates_before - len(df_melt)
+    
+    #  DEBUG 5: Verificar duplicados
+    st.sidebar.write(f"**Duplicados eliminados:** {duplicates_removed}")
+    
     # --- Asegurar que Year sea entera y ordenada ---
     df_melt["Year"] = df_melt["Year"].astype(int)
     df_melt = df_melt.sort_values(["Expenditure_Type", "Year"]).reset_index(drop=True)
-
+    
+    #  DEBUG 6: Verificar datos finales de Total NHE
+    total_nhe = df_melt[df_melt["Expenditure_Type"].str.contains("Total National", na=False)]
+    if len(total_nhe) > 0:
+        st.sidebar.write("###  Datos Finales: Total National Health Expenditures")
+        st.sidebar.write(f"**Registros:** {len(total_nhe)}")
+        st.sidebar.write(f"**Años únicos:** {total_nhe['Year'].nunique()}")
+        st.sidebar.write(f"**Rango años:** {total_nhe['Year'].min()} - {total_nhe['Year'].max()}")
+        st.sidebar.write(f"**Valor mínimo:** ${total_nhe['Amount'].min():,.0f}M")
+        st.sidebar.write(f"**Valor máximo:** ${total_nhe['Amount'].max():,.0f}M")
+        st.sidebar.write("**Primeros 5 años:**")
+        st.sidebar.dataframe(total_nhe.head(5))
+        st.sidebar.write("**Últimos 5 años:**")
+        st.sidebar.dataframe(total_nhe.tail(5))
+    
     return df_melt
+
+
 def prepare_time_series(data, fill_missing=True):
     """Prepara una serie temporal para modelado"""
     ts_data = data.copy().sort_values('Year')
