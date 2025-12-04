@@ -229,6 +229,16 @@ def ensemble_forecast(data, periods=10):
 
 nhe = load_data()
 
+# **DIAGNÓSTICO: Verificar si hay duplicados**
+duplicates = nhe.groupby(['Expenditure_Type', 'Year']).size().reset_index(name='count')
+duplicates = duplicates[duplicates['count'] > 1]
+
+if len(duplicates) > 0:
+    st.error(" Se detectaron registros duplicados:")
+    st.dataframe(duplicates.head(20))
+    st.info("Limpiando duplicados automáticamente...")
+    nhe = nhe.drop_duplicates(subset=['Expenditure_Type', 'Year'], keep='first')
+
 if nhe.empty:
     st.error("El dataset está vacío. Verifica que el archivo CSV esté bien estructurado.")
     st.stop()
