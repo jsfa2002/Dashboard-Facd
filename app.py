@@ -50,7 +50,6 @@ st.markdown("""
 # ============================================
 # FUNCIONES DE CARGA Y PREPROCESAMIENTO
 # ============================================
-
 @st.cache_data
 def load_data():
     """Carga y preprocesa los datos del NHE"""
@@ -64,6 +63,10 @@ def load_data():
     
     df.columns = df.columns.str.strip()
     df.rename(columns={df.columns[0]: "Expenditure_Type"}, inplace=True)
+
+    # --- LIMPIEZA EXTRA: eliminar encabezados intermedios y filas vacías ---
+    df = df[df["Expenditure_Type"].notna()]
+    df = df[~df["Expenditure_Type"].str.contains("Source|Table|Funds|Expenditures|Type", case=False, na=False)]
     
     # Transformar de formato ancho a largo
     df_melt = df.melt(id_vars=["Expenditure_Type"], var_name="Year", value_name="Amount")
@@ -75,11 +78,17 @@ def load_data():
         .astype(str)
         .str.replace(",", "")
         .str.replace("-", "0")
+        .str.extract(r"([0-9]+\\.?[0-9]*)")[0]
         .astype(float)
     )
     
-    df_melt = df_melt.dropna(subset=["Year"])
+    df_melt = df_melt.dropna(subset=["Year", "Amount"])
+
+    # --- AGRUPAR POR AÑO Y TIPO para eliminar duplicados ---
+    df_melt = df_melt.groupby(["Expenditure_Type", "Year"], as_index=False)["Amount"].sum()
+    
     return df_melt
+
 
 def prepare_time_series(data, fill_missing=True):
     """Prepara una serie temporal para modelado"""
