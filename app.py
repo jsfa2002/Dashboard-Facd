@@ -356,12 +356,46 @@ salud estadounidense y proyectar necesidades futuras de financiamiento.</p>
 """, unsafe_allow_html=True)
 
 # Filtrar datos del Total NHE
-total = filtered[filtered["Expenditure_Type"] == "Total National Health Expenditures"].copy()
-total_prepared = prepare_time_series(total, fill_missing=True)
+st.write("**Categorías disponibles en el dataset:**")
+st.write(filtered["Expenditure_Type"].unique()[:10])  # Mostrar primeras 10 categorías para debug
+
+# Buscar la categoría correcta (puede tener variaciones en el nombre)
+possible_names = [
+    "Total National Health Expenditures",
+    "National Health Expenditures",
+    "Total Health Expenditures",
+    "Total Expenditures"
+]
+
+total = pd.DataFrame()
+matched_name = None
+
+for name in possible_names:
+    temp = filtered[filtered["Expenditure_Type"].str.contains(name, case=False, na=False)]
+    if len(temp) > 0:
+        total = temp.copy()
+        matched_name = name
+        break
+
+# Si no encuentra por nombre exacto, buscar por palabra clave "Total" y "National"
+if len(total) == 0:
+    total = filtered[
+        (filtered["Expenditure_Type"].str.contains("Total", case=False, na=False)) &
+        (filtered["Expenditure_Type"].str.contains("National", case=False, na=False))
+    ].copy()
+    if len(total) > 0:
+        matched_name = total["Expenditure_Type"].iloc[0]
 
 if len(total) == 0:
-    st.warning("No hay datos disponibles para el rango de años seleccionado.")
+    st.error("⚠️ No se encontró la categoría 'Total National Health Expenditures'. Categorías disponibles:")
+    st.dataframe(filtered["Expenditure_Type"].unique())
+    st.stop()
 else:
+    st.success(f"✓ Categoría encontrada: **{matched_name}**")
+    
+    # Preparar serie temporal
+    total_prepared = prepare_time_series(total, fill_missing=True)
+    
     # 1. DIAGNÓSTICO DE CALIDAD
     st.subheader("1. Diagnóstico de Calidad e Integridad de Datos")
     
@@ -392,7 +426,6 @@ else:
         avg_annual = ((total['Amount'].iloc[-1] / total['Amount'].iloc[0]) ** (1/len(total)) - 1) * 100
         st.metric("CAGR (Tasa de crecimiento anual compuesta)", f"{avg_annual:.2f}%")
         
-        # Volatilidad (coeficiente de variación)
         cv = (total['Amount'].std() / total['Amount'].mean()) * 100
         st.metric("Coeficiente de variación", f"{cv:.1f}%")
     
@@ -426,7 +459,6 @@ else:
         stats_df.index = ["Conteo", "Media", "Desv. Est.", "Mínimo", "Q1 (25%)", "Mediana", "Q3 (75%)", "Máximo"]
         st.dataframe(stats_df.style.format("{:,.2f}"))
         
-        # Estadísticas adicionales
         st.write("**Métricas adicionales:**")
         additional_stats = pd.DataFrame({
             "Métrica": ["Asimetría (Skewness)", "Curtosis", "Coef. Variación"],
@@ -439,7 +471,6 @@ else:
         st.dataframe(additional_stats.style.format({"Valor": "{:.3f}"}))
     
     with col2:
-        # Calcular tasas de crecimiento
         total_sorted = total.sort_values("Year")
         total_sorted["Growth_Rate"] = total_sorted["Amount"].pct_change() * 100
         
@@ -451,7 +482,6 @@ else:
             "Crecimiento (%)": "{:.2f}"
         }))
         
-        # Décadas de mayor crecimiento
         total_sorted['Decade'] = (total_sorted['Year'] // 10) * 10
         decade_growth = total_sorted.groupby('Decade').agg({
             'Amount': lambda x: ((x.iloc[-1] / x.iloc[0]) - 1) * 100 if len(x) > 1 else 0
@@ -483,7 +513,6 @@ else:
     anual, y análisis de aceleración/desaceleración del crecimiento.</p>
     """, unsafe_allow_html=True)
     
-    # Gráfico principal: Evolución del gasto
     fig_total = go.Figure()
     
     fig_total.add_trace(go.Scatter(
@@ -508,7 +537,6 @@ else:
     
     st.plotly_chart(fig_total, use_container_width=True)
     
-    # Gráfico de tasas de crecimiento
     fig_growth = go.Figure()
     
     fig_growth.add_trace(go.Bar(
@@ -521,7 +549,6 @@ else:
         hovertemplate='<b>Año:</b> %{x}<br><b>Crecimiento:</b> %{y:.2f}%<extra></extra>'
     ))
     
-    # Línea de tendencia
     z = np.polyfit(range(len(total_sorted)), total_sorted["Growth_Rate"].fillna(0), 2)
     p = np.poly1d(z)
     
@@ -571,7 +598,6 @@ else:
     # Generar proyecciones
     ensemble, exp_smooth, poly, linear, future_years = ensemble_forecast(total_prepared, forecast_periods)
     
-    # Crear dataframe de proyecciones
     forecast_df = pd.DataFrame({
         'Año': future_years,
         'Ensemble (Recomendado)': ensemble,
@@ -580,10 +606,8 @@ else:
         'Tendencia Lineal': linear
     })
     
-    # Visualización de proyecciones
     fig_forecast = go.Figure()
     
-    # Datos históricos
     fig_forecast.add_trace(go.Scatter(
         x=total_sorted["Year"],
         y=total_sorted["Amount"],
@@ -593,7 +617,6 @@ else:
         marker=dict(size=6)
     ))
     
-    # Proyección Ensemble
     fig_forecast.add_trace(go.Scatter(
         x=future_years,
         y=ensemble,
@@ -603,7 +626,6 @@ else:
         marker=dict(size=8, symbol='diamond')
     ))
     
-    # Banda de confianza (±15%)
     upper_bound = ensemble * 1.15
     lower_bound = ensemble * 0.85
     
@@ -617,7 +639,6 @@ else:
         showlegend=True
     ))
     
-    # Otras proyecciones
     fig_forecast.add_trace(go.Scatter(
         x=future_years,
         y=exp_smooth,
@@ -647,14 +668,12 @@ else:
     
     st.plotly_chart(fig_forecast, use_container_width=True)
     
-    # Tabla de proyecciones
     st.write("**Tabla de proyecciones detalladas:**")
     forecast_display = forecast_df.copy()
     for col in forecast_display.columns[1:]:
         forecast_display[col] = forecast_display[col].apply(lambda x: f"${x:,.0f}M")
     st.dataframe(forecast_display, use_container_width=True)
     
-    # Métricas de proyección
     col1, col2, col3 = st.columns(3)
     with col1:
         final_forecast = ensemble[-1]
@@ -681,19 +700,7 @@ else:
     aproximadamente ${ensemble[-1]:,.0f} millones de dólares en {int(future_years[-1])}, lo que representa un crecimiento 
     del {forecast_growth:.1f}% respecto al último valor observado en {int(total_sorted['Year'].iloc[-1])}. La tasa de 
     crecimiento anual compuesta proyectada (CAGR) de {annual_growth_forecast:.2f}% es ligeramente inferior al crecimiento 
-    histórico de {avg_annual:.2f}%, sugiriendo una moderación en la expansión del gasto. Esta desaceleración podría 
-    atribuirse a diversos factores: mayor adopción de medicina preventiva, eficiencias operativas en el sistema de salud, 
-    presión política para contener costos, y posible estabilización demográfica post-baby boomer.</p>
-    
-    <p>El intervalo de confianza de ±15% refleja la incertidumbre inherente a cualquier proyección de largo plazo. Factores 
-    que podrían llevar el gasto hacia el límite superior incluyen: nuevas pandemias, avances tecnológicos costosos (terapias 
-    génicas, medicina de precisión), expansión adicional de cobertura, o aumento en longevidad. Factores que podrían 
-    contener el gasto incluyen: reformas estructurales del sistema, mayor competencia en el mercado de seguros, adopción 
-    de telemedicina, o cambios en patrones de utilización.</p>
-    
-    <p>Es crucial interpretar estas proyecciones como escenarios plausibles basados en tendencias históricas, no como 
-    predicciones deterministas. Los modelos de series temporales tienen limitaciones inherentes al extrapolar hacia el 
-    futuro, particularmente en horizontes largos donde la probabilidad de cambios estructurales aumenta significativamente.</p>
+    histórico de {avg_annual:.2f}%, sugiriendo una moderación en la expansión del gasto.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1307,7 +1314,7 @@ st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666; padding: 30px; background-color: #f8f9fa; border-radius: 10px;'>
 <h4>Fundamentos para el Análisis de Datos (FACD)</h4>
-<p><strong>Desarrollado por:</strong> Juan Sebastián Fajardo Acevedo</p>
+<p><strong>Desarrollado por:</strong> Juan Sebastián Fajardo Acevedo y Miguel Ängel Vargas Hernández</p>
 <p><strong>Docente:</strong> Ana María Gómez Lamus, M.Sc. en Estadística</p>
 <p><strong>Institución:</strong> Universidad de La Sabana</p>
 <p><strong>Año:</strong> 2025</p>
