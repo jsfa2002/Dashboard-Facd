@@ -67,10 +67,8 @@ def load_data():
     df.columns = df.columns.str.strip()
     df.rename(columns={df.columns[0]: "Expenditure_Type"}, inplace=True)
 
-    # --- Eliminar filas irrelevantes PERO MANTENER las categorías importantes ---
+    # --- Eliminar filas irrelevantes ---
     df = df[df["Expenditure_Type"].notna()]
-    
-    # Solo eliminar filas que sean claramente notas o headers, NO las categorías de datos
     df = df[~df["Expenditure_Type"].str.contains("^Source|^Table|^NOTE:|^Funds", case=False, na=False, regex=True)]
 
     # --- Transformar formato ancho a largo ---
@@ -89,21 +87,19 @@ def load_data():
         .str.replace("-", "0", regex=False)
     )
     
-    # Extraer solo números (incluyendo decimales)
     df_melt["Amount"] = pd.to_numeric(df_melt["Amount"].str.extract(r"([0-9]+\.?[0-9]*)", expand=False)[0], errors="coerce")
 
     # --- Quitar valores nulos ---
     df_melt = df_melt.dropna(subset=["Year", "Amount"])
 
-    # --- Agrupar por año y tipo (por si hay duplicados) ---
-    df_melt = df_melt.groupby(["Expenditure_Type", "Year"], as_index=False)["Amount"].sum()
+    # --- **CRÍTICO: Eliminar duplicados ANTES de agrupar** ---
+    df_melt = df_melt.drop_duplicates(subset=["Expenditure_Type", "Year"], keep="first")
 
     # --- Asegurar que Year sea entera y ordenada ---
     df_melt["Year"] = df_melt["Year"].astype(int)
-    df_melt = df_melt.sort_values(["Expenditure_Type", "Year"])
+    df_melt = df_melt.sort_values(["Expenditure_Type", "Year"]).reset_index(drop=True)
 
     return df_melt
-
 def prepare_time_series(data, fill_missing=True):
     """Prepara una serie temporal para modelado"""
     ts_data = data.copy().sort_values('Year')
