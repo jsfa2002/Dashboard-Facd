@@ -1128,37 +1128,41 @@ específicas), y proyectiva (forecasting). Los hallazgos tienen implicaciones si
 públicas, la planificación estratégica de organizaciones de salud, y la comprensión de las dinámicas de costos en atención 
 médica.</p>
 """, unsafe_allow_html=True)
+
 col1, col2 = st.columns(2)
+
 with col1:
-st.markdown("""
-<div style='background-color: #f0fdf4; padding: 20px; border-radius: 10px; border-left: 5px solid #10b981;'>
-<h5>Fortalezas del Dataset y del Análisis</h5>
-<ul>
-<li><strong>Cobertura temporal extensa:</strong> 64 años de datos históricos permiten identificar tendencias de largo plazo</li>
-<li><strong>Alta calidad de datos:</strong> Completitud excepcional en categorías principales (>95%)</li>
-<li><strong>Granularidad detallada:</strong> 65 categorías diferentes permiten análisis sectoriales profundos</li>
-<li><strong>Fuente oficial y confiable:</strong> CMS es la autoridad nacional en estadísticas de salud</li>
-<li><strong>Actualización periódica:</strong> Datos actualizados hasta 2023 mantienen relevancia</li>
-<li><strong>Metodología rigurosa:</strong> Aplicación de múltiples técnicas de forecasting aumenta robustez</li>
-<li><strong>Interpretación contextualizada:</strong> Vinculación de datos con políticas y eventos históricos</li>
-</ul>
-</div>
-""", unsafe_allow_html=True)
+    st.markdown("""
+    <div style='background-color: #f0fdf4; padding: 20px; border-radius: 10px; border-left: 5px solid #10b981;'>
+    <h5>Fortalezas del Dataset y del Análisis</h5>
+    <ul>
+    <li><strong>Cobertura temporal extensa:</strong> 64 años de datos históricos permiten identificar tendencias de largo plazo</li>
+    <li><strong>Alta calidad de datos:</strong> Completitud excepcional en categorías principales (>95%)</li>
+    <li><strong>Granularidad detallada:</strong> 65 categorías diferentes permiten análisis sectoriales profundos</li>
+    <li><strong>Fuente oficial y confiable:</strong> CMS es la autoridad nacional en estadísticas de salud</li>
+    <li><strong>Actualización periódica:</strong> Datos actualizados hasta 2023 mantienen relevancia</li>
+    <li><strong>Metodología rigurosa:</strong> Aplicación de múltiples técnicas de forecasting aumenta robustez</li>
+    <li><strong>Interpretación contextualizada:</strong> Vinculación de datos con políticas y eventos históricos</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
 with col2:
-st.markdown("""
-<div style='background-color: #fef3c7; padding: 20px; border-radius: 10px; border-left: 5px solid #f59e0b;'>
-<h5>Limitaciones y Consideraciones</h5>
-<ul>
-<li><strong>Valores nominales:</strong> Los datos no están ajustados por inflación (valores corrientes)</li>
-<li><strong>Datos faltantes en categorías secundarias:</strong> Algunas categorías tienen <15% de completitud</li>
-<li><strong>Cambios metodológicos históricos:</strong> Redefiniciones de categorías complican comparaciones temporales</li>
-<li><strong>Proyecciones basadas en tendencias:</strong> Los modelos asumen continuidad de patrones históricos</li>
-<li><strong>Eventos imprevisibles:</strong> Pandemias, reformas radicales, o crisis no están contempladas</li>
-<li><strong>Agregación nacional:</strong> No refleja variabilidad geográfica o demográfica subnacional</li>
-<li><strong>Causalidad no establecida:</strong> El análisis es descriptivo y proyectivo, no causal</li>
-</ul>
-</div>
-""", unsafe_allow_html=True)
+    st.markdown("""
+    <div style='background-color: #fef3c7; padding: 20px; border-radius: 10px; border-left: 5px solid #f59e0b;'>
+    <h5>Limitaciones y Consideraciones</h5>
+    <ul>
+    <li><strong>Valores nominales:</strong> Los datos no están ajustados por inflación (valores corrientes)</li>
+    <li><strong>Datos faltantes en categorías secundarias:</strong> Algunas categorías tienen <15% de completitud</li>
+    <li><strong>Cambios metodológicos históricos:</strong> Redefiniciones de categorías complican comparaciones temporales</li>
+    <li><strong>Proyecciones basadas en tendencias:</strong> Los modelos asumen continuidad de patrones históricos</li>
+    <li><strong>Eventos imprevisibles:</strong> Pandemias, reformas radicales, o crisis no están contempladas</li>
+    <li><strong>Agregación nacional:</strong> No refleja variabilidad geográfica o demográfica subnacional</li>
+    <li><strong>Causalidad no establecida:</strong> El análisis es descriptivo y proyectivo, no causal</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
 st.markdown("""
 <div class="context-box">
 <h4>Hallazgos Clave del Análisis</h4>
@@ -1166,27 +1170,28 @@ st.markdown("""
     <li><strong>Crecimiento exponencial sostenido del gasto total:</strong> El gasto nacional en salud ha crecido de $253 mil 
     millones en 1980 a $4.87 billones en 2023, con una CAGR del 6.95%. Las proyecciones sugieren que esta tendencia continuará, 
     aunque con moderación gradual de las tasas de crecimiento.</li>
-<li><strong>Heterogeneidad significativa entre categorías:</strong> Workers' Compensation representa una fracción 
-relativamente pequeña y estable del gasto total, mientras que seguros privados y consumo médico han experimentado 
-expansión acelerada. Esta divergencia refleja dinámicas específicas de cada sector.</li>
+    <li><strong>Heterogeneidad significativa entre categorías:</strong> Workers' Compensation representa una fracción 
+    relativamente pequeña y estable del gasto total, mientras que seguros privados y consumo médico han experimentado 
+    expansión acelerada. Esta divergencia refleja dinámicas específicas de cada sector.</li>
 
-<li><strong>Patrones de completitud de datos revelan historia institucional:</strong> La presencia de datos faltantes 
-en ciertas categorías no es aleatoria, sino que refleja la evolución histórica de la clasificación de gastos del CMS 
-y cambios en políticas de reporte.</li>
+    <li><strong>Patrones de completitud de datos revelan historia institucional:</strong> La presencia de datos faltantes 
+    en ciertas categorías no es aleatoria, sino que refleja la evolución histórica de la clasificación de gastos del CMS 
+    y cambios en políticas de reporte.</li>
 
-<li><strong>Tres fases históricas identificables:</strong> (1) 1960-1980: establecimiento de Medicare/Medicaid y 
-crecimiento moderado, (2) 1980-2010: expansión acelerada con tecnología médica y envejecimiento, (3) 2010-2023: 
-crecimiento sostenido con desaceleración relativa post-ACA.</li>
+    <li><strong>Tres fases históricas identificables:</strong> (1) 1960-1980: establecimiento de Medicare/Medicaid y 
+    crecimiento moderado, (2) 1980-2010: expansión acelerada con tecnología médica y envejecimiento, (3) 2010-2023: 
+    crecimiento sostenido con desaceleración relativa post-ACA.</li>
 
-<li><strong>Proyecciones indican continuidad con moderación:</strong> Los modelos ensemble proyectan tasas de crecimiento 
-futuras ligeramente inferiores al promedio histórico, sugiriendo efectos de políticas de contención de costos y 
-posible estabilización demográfica.</li>
+    <li><strong>Proyecciones indican continuidad con moderación:</strong> Los modelos ensemble proyectan tasas de crecimiento 
+    futuras ligeramente inferiores al promedio histórico, sugiriendo efectos de políticas de contención de costos y 
+    posible estabilización demográfica.</li>
 
-<li><strong>Necesidad de análisis multifacético:</strong> El gasto en salud no puede entenderse mediante una sola métrica; 
-requiere análisis desagregado, comparativo, y contextualizado para capturar su complejidad inherente.</li>
+    <li><strong>Necesidad de análisis multifacético:</strong> El gasto en salud no puede entenderse mediante una sola métrica; 
+    requiere análisis desagregado, comparativo, y contextualizado para capturar su complejidad inherente.</li>
 </ol>
 </div>
 """, unsafe_allow_html=True)
+
 st.markdown("""
 <div style='background-color: #e0e7ff; padding: 20px; border-radius: 10px; border-left: 5px solid #6366f1; margin-top: 20px;'>
 <h4>Implicaciones para Política Pública y Gestión en Salud</h4>
@@ -1204,6 +1209,7 @@ y cambios en gasto, (3) comparaciones internacionales para identificar mejores p
 que incorpore variables exógenas (demográficas, económicas, tecnológicas).</p>
 </div>
 """, unsafe_allow_html=True)
+
 st.markdown("---")
 # ============================================
 # DESCARGA DE DATOS
@@ -1213,33 +1219,38 @@ st.markdown("""
 <p>Esta sección permite descargar los datos procesados y las proyecciones generadas durante el análisis. Los archivos CSV 
 pueden ser utilizados para análisis adicionales, reportes, o integración con otras herramientas analíticas.</p>
 """, unsafe_allow_html=True)
+
 col1, col2, col3 = st.columns(3)
+
 with col1:
-if len(total) > 0:
-csv_total = total.to_csv(index=False).encode('utf-8')
-st.download_button(
-label="Descargar Total NHE",
-data=csv_total,
-file_name=f'total_nhe_{years[0]}_{years[1]}.csv',
-mime='text/csv'
-)
+    if len(total) > 0:
+        csv_total = total.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Descargar Total NHE",
+            data=csv_total,
+            file_name=f'total_nhe_{years[0]}_{years[1]}.csv',
+            mime='text/csv'
+        )
+
 with col2:
-if len(sub_nhe) > 0:
-csv_related = sub_nhe.to_csv(index=False).encode('utf-8')
-st.download_button(
-label="Descargar Variables Relacionadas",
-data=csv_related,
-file_name=f'related_vars_{years[0]}_{years[1]}.csv',
-mime='text/csv'
-)
+    if len(sub_nhe) > 0:
+        csv_related = sub_nhe.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Descargar Variables Relacionadas",
+            data=csv_related,
+            file_name=f'related_vars_{years[0]}_{years[1]}.csv',
+            mime='text/csv'
+        )
+
 with col3:
-csv_full = filtered.to_csv(index=False).encode('utf-8')
-st.download_button(
-label="Descargar Dataset Completo Filtrado",
-data=csv_full,
-file_name=f'nhe_complete_{years[0]}_{years[1]}.csv',
-mime='text/csv'
-)
+    csv_full = filtered.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Descargar Dataset Completo Filtrado",
+        data=csv_full,
+        file_name=f'nhe_complete_{years[0]}_{years[1]}.csv',
+        mime='text/csv'
+    )
+
 # ============================================
 # FOOTER
 # ============================================
@@ -1258,4 +1269,3 @@ Las proyecciones son indicativas y no constituyen asesoría financiera o políti
 consulte con expertos en política de salud y análisis económico.</p>
 </div>
 """.format(int(nhe['Year'].max())), unsafe_allow_html=True)
-
