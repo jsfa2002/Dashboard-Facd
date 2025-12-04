@@ -653,7 +653,6 @@ else:
     for col in forecast_display.columns[1:]:
         forecast_display[col] = forecast_display[col].apply(lambda x: f"${x:,.0f}M")
     st.dataframe(forecast_display, use_container_width=True)
-st.dataframe(forecast_display, use_container_width=True)
     
     # Métricas de proyección
     col1, col2, col3 = st.columns(3)
