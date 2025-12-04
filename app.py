@@ -274,7 +274,7 @@ def ensemble_forecast(data, periods=10):
 
 nhe = load_data(debug_mode=debug_mode)
 
-nhe = load_data(debug_mode=debug_mode)
+
 
 # DIAGNÓSTICO DE EMERGENCIA
 if not debug_mode:
@@ -321,22 +321,7 @@ y gastos relacionados con seguros de salud.</p>
 
 st.sidebar.header("Configuración del Análisis")
 debug_mode = st.sidebar.checkbox("Activar modo DEBUG", value=False)
-years = st.sidebar.slider(
-    "Selecciona rango de años",
-    int(nhe["Year"].min()),
-    int(nhe["Year"].max()),
-    (1980, 2023)
-)
 
-forecast_periods = st.sidebar.slider(
-    "Períodos de proyección (años)",
-    5, 20, 10
-)
-
-show_raw_data = st.sidebar.checkbox("Mostrar datos crudos", value=False)
-show_advanced_metrics = st.sidebar.checkbox("Mostrar métricas avanzadas", value=True)
-
-filtered = nhe[(nhe["Year"] >= years[0]) & (nhe["Year"] <= years[1])].copy()
 
 # ============================================
 # MÉTRICAS GENERALES
