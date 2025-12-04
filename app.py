@@ -19,11 +19,11 @@ def load_data():
     except UnicodeDecodeError:
         df = pd.read_csv("nhe2023/NHE2023.csv", encoding="latin1")  # alternativa segura
     return df
-st.write(" Columnas detectadas en el dataset:")
-st.write(nhe.columns.tolist())
 
 
 nhe = load_data()
+st.write(" Columnas detectadas en el dataset:")
+st.write(nhe.columns.tolist())
 
 st.sidebar.header("Filtros")
 years = st.sidebar.slider("Selecciona rango de años", int(nhe["Year"].min()), int(nhe["Year"].max()), (1980, 2023))
