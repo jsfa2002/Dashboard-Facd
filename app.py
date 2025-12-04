@@ -1,732 +1,79 @@
+fig_forecast.add_trace(go.Scatter(
+    x=future_years,
+    y=exp_smooth,
+    mode='lines',
+    name='Suavizado Exponencial',
+    line=dict(color='#f59e0b', width=2, dash='dot'),
+    visible='legendonly'
+))
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import warnings
-warnings.filterwarnings('ignore')
+fig_forecast.add_trace(go.Scatter(
+    x=future_years,
+    y=poly,
+    mode='lines',
+    name='Regresión Polinomial',
+    line=dict(color='#8b5cf6', width=2, dash='dot'),
+    visible='legendonly'
+))
 
-# Configuración de la página
-st.set_page_config(
-    page_title="Análisis Avanzado NHE 2023",
-    layout="wide",
-    initial_sidebar_state="expanded"
+fig_forecast.update_layout(
+    title=f"Proyección del Gasto Nacional en Salud hasta {int(future_years[-1])}",
+    xaxis_title="Año",
+    yaxis_title="Monto (Millones USD)",
+    hovermode='x unified',
+    template="plotly_white",
+    height=600
 )
 
-# CSS personalizado
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #1f2937;
-        margin-bottom: 1rem;
-    }
-    .context-box {
-        background-color: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 5px solid #2563eb;
-        margin: 1.5rem 0;
-    }
-    .interpretation-box {
-        background-color: #ecfdf5;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 5px solid #10b981;
-        margin: 1.5rem 0;
-    }
-    .metric-card {
-        background-color: #ffffff;
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-    }
-</style>
-""", unsafe_allow_html=True)
+st.plotly_chart(fig_forecast, use_container_width=True)
 
-# ============================================
-# FUNCIONES DE CARGA Y PREPROCESAMIENTO
-# ============================================
-@st.cache_data
-def load_data():
-    """Carga, limpia y estructura los datos NHE correctamente"""
-    import pandas as pd
+st.write("**Tabla de proyecciones detalladas:**")
+forecast_display = forecast_df.copy()
+for col in forecast_display.columns[1:]:
+    forecast_display[col] = forecast_display[col].apply(lambda x: f"${x:,.0f}M")
+st.dataframe(forecast_display, use_container_width=True)
 
-    try:
-        df = pd.read_csv("nhe2023/NHE2023.csv", encoding="latin1", skiprows=1)
-    except UnicodeDecodeError:
-        df = pd.read_csv("nhe2023/NHE2023.csv", encoding="utf-8", skiprows=1)
-    except FileNotFoundError:
-        st.error("Error: No se encontró el archivo NHE2023.csv")
-        st.stop()
-
-    # --- Normalizar columnas ---
-    df.columns = df.columns.str.strip()
-    df.rename(columns={df.columns[0]: "Expenditure_Type"}, inplace=True)
-
-    # --- Eliminar filas irrelevantes PERO MANTENER las categorías importantes ---
-    df = df[df["Expenditure_Type"].notna()]
-    
-    # Solo eliminar filas que sean claramente notas o headers, NO las categorías de datos
-    df = df[~df["Expenditure_Type"].str.contains("^Source|^Table|^NOTE:|^Funds", case=False, na=False, regex=True)]
-
-    # --- Transformar formato ancho a largo ---
-    df_melt = df.melt(id_vars=["Expenditure_Type"], var_name="Year", value_name="Amount")
-
-    # --- Limpiar columna Year ---
-    df_melt["Year"] = df_melt["Year"].astype(str).str.extract(r"(\d{4})", expand=False)
-    df_melt["Year"] = pd.to_numeric(df_melt["Year"], errors="coerce")
-
-    # --- Limpiar y convertir montos ---
-    df_melt["Amount"] = (
-        df_melt["Amount"]
-        .astype(str)
-        .str.replace(",", "", regex=False)
-        .str.replace("$", "", regex=False)
-        .str.replace("-", "0", regex=False)
-    )
-    
-    # Extraer solo números (incluyendo decimales)
-    df_melt["Amount"] = pd.to_numeric(df_melt["Amount"].str.extract(r"([0-9]+\.?[0-9]*)", expand=False)[0], errors="coerce")
-
-    # --- Quitar valores nulos ---
-    df_melt = df_melt.dropna(subset=["Year", "Amount"])
-
-    # --- Agrupar por año y tipo (por si hay duplicados) ---
-    df_melt = df_melt.groupby(["Expenditure_Type", "Year"], as_index=False)["Amount"].sum()
-
-    # --- Asegurar que Year sea entera y ordenada ---
-    df_melt["Year"] = df_melt["Year"].astype(int)
-    df_melt = df_melt.sort_values(["Expenditure_Type", "Year"])
-
-    return df_melt
-Y ahora, en la sección del Primer Reto, reemplaza la parte de búsqueda de categoría con esto más simple:
-python# Filtrar datos del Total NHE
-st.write("**Debug: Primeras 10 categorías disponibles:**")
-st.code("\n".join(filtered["Expenditure_Type"].unique()[:10]))
-
-# Buscar "Total National Health Expenditures" de forma exacta primero
-total = filtered[filtered["Expenditure_Type"] == "Total National Health Expenditures"].copy()
-
-# Si no encuentra, buscar de forma flexible
-if len(total) == 0:
-    total = filtered[filtered["Expenditure_Type"].str.contains("Total National Health", case=False, na=False)].copy()
-
-# Si aún no encuentra, mostrar error
-if len(total) == 0:
-    st.error(" No se encontró la categoría 'Total National Health Expenditures'.")
-    st.write("**Todas las categorías disponibles:**")
-    st.dataframe(pd.DataFrame({"Categoría": filtered["Expenditure_Type"].unique()}))
-    st.stop()
-else:
-    st.success(f"✓ Categoría encontrada: {total['Expenditure_Type'].iloc[0]} ({len(total)} 
-
-
-
-def prepare_time_series(data, fill_missing=True):
-    """Prepara una serie temporal para modelado"""
-    ts_data = data.copy().sort_values('Year')
-    
-    if fill_missing:
-        # Interpolación lineal para valores faltantes
-        ts_data['Amount'] = ts_data['Amount'].interpolate(method='linear')
-    
-    return ts_data
-
-# ============================================
-# FUNCIONES DE FORECASTING
-# ============================================
-
-def create_ml_features(df):
-    """Crea features para modelos de ML"""
-    df = df.copy()
-    df['Year_Index'] = range(len(df))
-    df['Year_Squared'] = df['Year_Index'] ** 2
-    df['Year_Cubed'] = df['Year_Index'] ** 3
-    
-    # Features de lag
-    for lag in [1, 2, 3]:
-        df[f'Lag_{lag}'] = df['Amount'].shift(lag)
-    
-    # Rolling statistics
-    df['Rolling_Mean_3'] = df['Amount'].rolling(window=3, min_periods=1).mean()
-    df['Rolling_Std_3'] = df['Amount'].rolling(window=3, min_periods=1).std()
-    
-    # Diferencias
-    df['Diff_1'] = df['Amount'].diff()
-    df['Diff_2'] = df['Amount'].diff().diff()
-    
-    return df
-
-def exponential_smoothing_forecast(data, periods=10, alpha=0.3):
-    """Suavizado exponencial triple (Holt-Winters)"""
-    values = data['Amount'].values
-    n = len(values)
-    
-    # Inicialización
-    level = values[0]
-    trend = (values[-1] - values[0]) / n
-    forecasts = []
-    
-    # Parámetros optimizados
-    alpha = 0.3  # Nivel
-    beta = 0.1   # Tendencia
-    
-    levels = [level]
-    trends = [trend]
-    
-    # Ajuste del modelo
-    for t in range(1, n):
-        level_prev = level
-        trend_prev = trend
-        
-        level = alpha * values[t] + (1 - alpha) * (level_prev + trend_prev)
-        trend = beta * (level - level_prev) + (1 - beta) * trend_prev
-        
-        levels.append(level)
-        trends.append(trend)
-    
-    # Proyección
-    last_level = levels[-1]
-    last_trend = trends[-1]
-    
-    for h in range(1, periods + 1):
-        forecast = last_level + h * last_trend
-        forecasts.append(forecast)
-    
-    return forecasts
-
-def polynomial_regression_forecast(data, periods=10, degree=3):
-    """Regresión polinomial para forecasting"""
-    from sklearn.preprocessing import PolynomialFeatures
-    from sklearn.linear_model import LinearRegression
-    
-    X = data['Year'].values.reshape(-1, 1)
-    y = data['Amount'].values
-    
-    poly = PolynomialFeatures(degree=degree)
-    X_poly = poly.fit_transform(X)
-    
-    model = LinearRegression()
-    model.fit(X_poly, y)
-    
-    # Predicción
-    future_years = np.arange(data['Year'].max() + 1, data['Year'].max() + periods + 1)
-    X_future = future_years.reshape(-1, 1)
-    X_future_poly = poly.transform(X_future)
-    
-    forecasts = model.predict(X_future_poly)
-    
-    return forecasts, future_years
-
-def ensemble_forecast(data, periods=10):
-    """Ensemble de múltiples métodos de forecasting"""
-    
-    # Método 1: Suavizado exponencial
-    exp_smooth = exponential_smoothing_forecast(data, periods)
-    
-    # Método 2: Regresión polinomial
-    poly_forecast, future_years = polynomial_regression_forecast(data, periods)
-    
-    # Método 3: Tendencia lineal simple
-    X = np.arange(len(data)).reshape(-1, 1)
-    y = data['Amount'].values
-    from sklearn.linear_model import LinearRegression
-    lr = LinearRegression()
-    lr.fit(X, y)
-    X_future = np.arange(len(data), len(data) + periods).reshape(-1, 1)
-    linear_forecast = lr.predict(X_future)
-    
-    # Ensemble (promedio ponderado)
-    ensemble = (
-        0.35 * np.array(exp_smooth) +
-        0.45 * poly_forecast +
-        0.20 * linear_forecast
-    )
-    
-    return ensemble, exp_smooth, poly_forecast, linear_forecast, future_years
-
-# ============================================
-# CARGA DE DATOS
-# ============================================
-
-nhe = load_data()
-
-if nhe.empty:
-    st.error("El dataset está vacío. Verifica que el archivo CSV esté bien estructurado.")
-    st.stop()
-
-
-# ============================================
-# HEADER Y CONTEXTO PRINCIPAL
-# ============================================
-
-st.markdown('<h1 class="main-header">Análisis Avanzado del Gasto Nacional en Salud de EE. UU. (1960-2023)</h1>', unsafe_allow_html=True)
-
-st.markdown("""
-<div class="context-box">
-<h3>Contexto del Análisis</h3>
-<p><strong>Fuente de datos:</strong> Centers for Medicare & Medicaid Services (CMS) - National Health Expenditure Accounts (NHE)</p>
-
-<p>Los National Health Expenditure Accounts (NHE) son un conjunto de datos oficiales que miden el gasto anual en 
-atención médica en los Estados Unidos. Estos datos son recopilados y mantenidos por los Centers for Medicare & Medicaid 
-Services (CMS) y representan la medida más completa y autorizada del gasto en salud del país. El dataset abarca desde 1960 
-hasta 2023, proporcionando una perspectiva histórica de 64 años sobre la evolución de los costos de atención médica.</p>
-
-<p><strong>Período analizado:</strong> 1960 - 2023 (64 años de datos históricos)</p>
-<p><strong>Unidad de medida:</strong> Millones de dólares estadounidenses (USD) en valores corrientes</p>
-
-<p><strong>Objetivo del análisis:</strong> Este estudio busca explorar de manera integral la evolución del gasto en salud 
-de Estados Unidos, identificando patrones históricos, tendencias emergentes y proyecciones futuras. Se emplearán técnicas 
-avanzadas de análisis estadístico, forecasting mediante múltiples metodologías (suavizado exponencial, regresión polinomial 
-y modelos ensemble), así como validación de la calidad e integridad de los datos. El análisis se centra en dos ejes principales: 
-el comportamiento del gasto total nacional en salud y el análisis comparativo de categorías específicas como Workers' Compensation 
-y gastos relacionados con seguros de salud.</p>
-
-<p><a href="https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/NationalHealthExpendData/NationalHealthAccountsHistorical" target="_blank">Enlace oficial al dataset del CMS</a></p>
-</div>
-""", unsafe_allow_html=True)
-
-# ============================================
-# SIDEBAR
-# ============================================
-
-st.sidebar.header("Configuración del Análisis")
-
-years = st.sidebar.slider(
-    "Selecciona rango de años",
-    int(nhe["Year"].min()),
-    int(nhe["Year"].max()),
-    (1980, 2023)
-)
-
-forecast_periods = st.sidebar.slider(
-    "Períodos de proyección (años)",
-    5, 20, 10
-)
-
-show_raw_data = st.sidebar.checkbox("Mostrar datos crudos", value=False)
-show_advanced_metrics = st.sidebar.checkbox("Mostrar métricas avanzadas", value=True)
-
-filtered = nhe[(nhe["Year"] >= years[0]) & (nhe["Year"] <= years[1])].copy()
-
-# ============================================
-# MÉTRICAS GENERALES
-# ============================================
-
-st.header("Vista General del Dataset")
-
-st.markdown("""
-<p>El dataset NHE2023 contiene información detallada sobre todos los componentes del gasto en salud de Estados Unidos. 
-Esta sección presenta estadísticas descriptivas generales que permiten evaluar la amplitud, profundidad y calidad de los 
-datos disponibles. Las métricas incluyen el volumen total de registros, la diversidad de categorías de gasto analizadas, 
-la cobertura temporal y la proporción de datos faltantes, factor crítico para determinar la confiabilidad de los análisis 
-posteriores.</p>
-""", unsafe_allow_html=True)
-
-col1, col2, col3, col4 = st.columns(4)
-
+col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("Total de registros", f"{len(nhe):,}")
+    final_forecast = ensemble[-1]
+    st.metric(
+        f"Proyección para {int(future_years[-1])}",
+        f"${final_forecast:,.0f}M"
+    )
 with col2:
-    st.metric("Categorías únicas", nhe["Expenditure_Type"].nunique())
+    forecast_growth = ((ensemble[-1] - total_sorted['Amount'].iloc[-1]) / total_sorted['Amount'].iloc[-1]) * 100
+    st.metric(
+        f"Crecimiento proyectado ({forecast_periods} años)",
+        f"{forecast_growth:.1f}%"
+    )
 with col3:
-    st.metric("Años disponibles", f"{int(nhe['Year'].min())} - {int(nhe['Year'].max())}")
-with col4:
-    missing_pct = (nhe["Amount"].isna().sum() / len(nhe)) * 100
-    st.metric("Datos faltantes", f"{missing_pct:.2f}%")
+    annual_growth_forecast = ((ensemble[-1] / total_sorted['Amount'].iloc[-1]) ** (1/forecast_periods) - 1) * 100
+    st.metric(
+        "CAGR proyectado",
+        f"{annual_growth_forecast:.2f}%"
+    )
 
-if show_raw_data:
-    st.subheader("Vista previa de los datos")
-    st.dataframe(nhe.head(20), use_container_width=True)
+st.markdown(f"""
+<div class="interpretation-box">
+<p><strong>Interpretación del forecasting:</strong> El modelo ensemble proyecta que el gasto nacional en salud alcanzará 
+aproximadamente ${ensemble[-1]:,.0f} millones de dólares en {int(future_years[-1])}, lo que representa un crecimiento 
+del {forecast_growth:.1f}% respecto al último valor observado en {int(total_sorted['Year'].iloc[-1])}. La tasa de 
+crecimiento anual compuesta proyectada (CAGR) de {annual_growth_forecast:.2f}% es ligeramente inferior al crecimiento 
+histórico de {avg_annual:.2f}%, sugiriendo una moderación en la expansión del gasto. Esta desaceleración podría 
+atribuirse a diversos factores: mayor adopción de medicina preventiva, eficiencias operativas en el sistema de salud, 
+presión política para contener costos, y posible estabilización demográfica post-baby boomer.</p>
 
-st.markdown("---")
+<p>El intervalo de confianza de ±15% refleja la incertidumbre inherente a cualquier proyección de largo plazo. Factores 
+que podrían llevar el gasto hacia el límite superior incluyen: nuevas pandemias, avances tecnológicos costosos (terapias 
+génicas, medicina de precisión), expansión adicional de cobertura, o aumento en longevidad. Factores que podrían 
+contener el gasto incluyen: reformas estructurales del sistema, mayor competencia en el mercado de seguros, adopción 
+de telemedicina, o cambios en patrones de utilización.</p>
 
-# ============================================
-# PRIMER RETO
-# ============================================
-
-st.header("Primer Reto: Total National Health Expenditures")
-
-st.markdown("""
-<div class="context-box">
-<h4>Contexto del Ejercicio 1</h4>
-
-<p><strong>Objetivo:</strong> Analizar exhaustivamente la evolución del gasto total en salud de Estados Unidos a lo largo 
-de más de seis décadas, identificando patrones de crecimiento, períodos de aceleración o desaceleración, y proyectando 
-tendencias futuras mediante técnicas avanzadas de forecasting.</p>
-
-<p><strong>Variable de interés:</strong> Total National Health Expenditures</p>
-
-<p><strong>Importancia del análisis:</strong> El gasto total en salud es un indicador macroeconómico fundamental que refleja 
-no solo el costo de la atención médica, sino también factores como el envejecimiento poblacional, avances tecnológicos, 
-cambios en políticas de salud pública (como Medicare, Medicaid, y el Affordable Care Act), inflación médica, y patrones 
-de utilización de servicios de salud. Este análisis permite comprender cómo estos factores han moldeado el sistema de 
-salud estadounidense y proyectar necesidades futuras de financiamiento.</p>
-
-<p><strong>Metodología aplicada:</strong></p>
-<ul>
-    <li><strong>Diagnóstico de calidad:</strong> Evaluación de completitud, consistencia y valores atípicos</li>
-    <li><strong>Análisis descriptivo:</strong> Estadísticas de tendencia central, dispersión y crecimiento</li>
-    <li><strong>Visualización temporal:</strong> Gráficos de series temporales con análisis de tendencias</li>
-    <li><strong>Forecasting avanzado:</strong> Aplicación de múltiples métodos (suavizado exponencial, regresión polinomial, 
-    ensemble) con intervalos de confianza</li>
-    <li><strong>Interpretación contextualizada:</strong> Vinculación de hallazgos con eventos históricos y políticas públicas</li>
-</ul>
+<p>Es crucial interpretar estas proyecciones como escenarios plausibles basados en tendencias históricas, no como 
+predicciones deterministas. Los modelos de series temporales tienen limitaciones inherentes al extrapolar hacia el 
+futuro, particularmente en horizontes largos donde la probabilidad de cambios estructurales aumenta significativamente.</p>
 </div>
 """, unsafe_allow_html=True)
-
-# Filtrar datos del Total NHE
-st.write("**Categorías disponibles en el dataset:**")
-st.write(filtered["Expenditure_Type"].unique()[:10])  # Mostrar primeras 10 categorías para debug
-
-# Buscar la categoría correcta (puede tener variaciones en el nombre)
-possible_names = [
-    "Total National Health Expenditures",
-    "National Health Expenditures",
-    "Total Health Expenditures",
-    "Total Expenditures"
-]
-
-total = pd.DataFrame()
-matched_name = None
-
-for name in possible_names:
-    temp = filtered[filtered["Expenditure_Type"].str.contains(name, case=False, na=False)]
-    if len(temp) > 0:
-        total = temp.copy()
-        matched_name = name
-        break
-
-# Si no encuentra por nombre exacto, buscar por palabra clave "Total" y "National"
-if len(total) == 0:
-    total = filtered[
-        (filtered["Expenditure_Type"].str.contains("Total", case=False, na=False)) &
-        (filtered["Expenditure_Type"].str.contains("National", case=False, na=False))
-    ].copy()
-    if len(total) > 0:
-        matched_name = total["Expenditure_Type"].iloc[0]
-
-if len(total) == 0:
-    st.error("⚠️ No se encontró la categoría 'Total National Health Expenditures'. Categorías disponibles:")
-    st.dataframe(filtered["Expenditure_Type"].unique())
-    st.stop()
-else:
-    st.success(f"✓ Categoría encontrada: **{matched_name}**")
-    
-    # Preparar serie temporal
-    total_prepared = prepare_time_series(total, fill_missing=True)
-    
-    # 1. DIAGNÓSTICO DE CALIDAD
-    st.subheader("1. Diagnóstico de Calidad e Integridad de Datos")
-    
-    st.markdown("""
-    <p>El diagnóstico de calidad es el primer paso crítico en cualquier análisis de datos. Aquí se evalúa la completitud 
-    de los datos, la presencia de valores faltantes, la existencia de valores atípicos (outliers) que podrían indicar 
-    errores de registro o eventos extraordinarios, y la consistencia general del dataset. Un dataset con alta integridad 
-    garantiza que las conclusiones derivadas sean confiables y válidas.</p>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Registros totales", len(total))
-        st.metric("Valores faltantes", total["Amount"].isna().sum())
-        completeness = (1 - total["Amount"].isna().sum() / len(total)) * 100
-        st.metric("Completitud", f"{completeness:.1f}%")
-    
-    with col2:
-        st.metric("Valor mínimo", f"${total['Amount'].min():,.0f}M")
-        st.metric("Valor máximo", f"${total['Amount'].max():,.0f}M")
-        st.metric("Rango", f"${total['Amount'].max() - total['Amount'].min():,.0f}M")
-    
-    with col3:
-        growth = ((total['Amount'].iloc[-1] - total['Amount'].iloc[0]) / total['Amount'].iloc[0]) * 100
-        st.metric("Crecimiento total", f"{growth:.1f}%")
-        
-        avg_annual = ((total['Amount'].iloc[-1] / total['Amount'].iloc[0]) ** (1/len(total)) - 1) * 100
-        st.metric("CAGR (Tasa de crecimiento anual compuesta)", f"{avg_annual:.2f}%")
-        
-        cv = (total['Amount'].std() / total['Amount'].mean()) * 100
-        st.metric("Coeficiente de variación", f"{cv:.1f}%")
-    
-    st.markdown("""
-    <div class="interpretation-box">
-    <p><strong>Interpretación del diagnóstico:</strong> Los datos de Total National Health Expenditures demuestran una 
-    integridad excepcional con cero valores faltantes en el rango seleccionado, lo cual es indicativo de un sistema de 
-    recolección de datos robusto y consistente por parte del CMS. El coeficiente de variación elevado refleja la 
-    transformación dramática del sistema de salud a lo largo de las décadas, con un crecimiento que no es lineal sino 
-    exponencial, particularmente acelerado en los últimos 20 años debido a factores como el envejecimiento de la población 
-    baby boomer, la expansión de cobertura bajo el ACA, y el incremento en costos de tecnología médica avanzada.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 2. RESUMEN ESTADÍSTICO
-    st.subheader("2. Análisis Estadístico Descriptivo")
-    
-    st.markdown("""
-    <p>El análisis estadístico descriptivo proporciona una caracterización cuantitativa completa de la distribución del 
-    gasto en salud. Las medidas de tendencia central (media, mediana) indican los valores típicos, mientras que las medidas 
-    de dispersión (desviación estándar, rangos intercuartílicos) revelan la variabilidad. El análisis de los últimos años 
-    es particularmente relevante para identificar tendencias recientes que pueden diferir de patrones históricos.</p>
-    """, unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.write("**Estadísticas descriptivas completas:**")
-        stats_df = total["Amount"].describe().to_frame()
-        stats_df.columns = ["Monto (Millones USD)"]
-        stats_df.index = ["Conteo", "Media", "Desv. Est.", "Mínimo", "Q1 (25%)", "Mediana", "Q3 (75%)", "Máximo"]
-        st.dataframe(stats_df.style.format("{:,.2f}"))
-        
-        st.write("**Métricas adicionales:**")
-        additional_stats = pd.DataFrame({
-            "Métrica": ["Asimetría (Skewness)", "Curtosis", "Coef. Variación"],
-            "Valor": [
-                total['Amount'].skew(),
-                total['Amount'].kurtosis(),
-                (total['Amount'].std() / total['Amount'].mean()) * 100
-            ]
-        })
-        st.dataframe(additional_stats.style.format({"Valor": "{:.3f}"}))
-    
-    with col2:
-        total_sorted = total.sort_values("Year")
-        total_sorted["Growth_Rate"] = total_sorted["Amount"].pct_change() * 100
-        
-        st.write("**Últimos 5 años de datos:**")
-        recent = total_sorted.tail(5)[["Year", "Amount", "Growth_Rate"]].copy()
-        recent.columns = ["Año", "Monto (M USD)", "Crecimiento (%)"]
-        st.dataframe(recent.style.format({
-            "Monto (M USD)": "{:,.0f}",
-            "Crecimiento (%)": "{:.2f}"
-        }))
-        
-        total_sorted['Decade'] = (total_sorted['Year'] // 10) * 10
-        decade_growth = total_sorted.groupby('Decade').agg({
-            'Amount': lambda x: ((x.iloc[-1] / x.iloc[0]) - 1) * 100 if len(x) > 1 else 0
-        }).round(2)
-        decade_growth.columns = ['Crecimiento (%)']
-        
-        st.write("**Crecimiento por década:**")
-        st.dataframe(decade_growth)
-    
-    st.markdown("""
-    <div class="interpretation-box">
-    <p><strong>Interpretación estadística:</strong> La distribución de los datos muestra una asimetría positiva marcada 
-    (skewness > 0), lo cual confirma que los valores recientes son significativamente mayores que los históricos, reflejando 
-    un crecimiento exponencial. La curtosis elevada indica la presencia de valores extremos, particularmente en los años 
-    más recientes. El análisis por décadas revela que el crecimiento no ha sido uniforme: las décadas de 1960-1970 y 
-    2000-2010 experimentaron las tasas de expansión más agresivas, coincidiendo con la implementación de Medicare/Medicaid 
-    y la crisis financiera de 2008 respectivamente. Los últimos cinco años muestran tasas de crecimiento más moderadas 
-    pero sostenidas, posiblemente reflejando esfuerzos de contención de costos y mayor eficiencia en la prestación de servicios.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 3. VISUALIZACIÓN DE TENDENCIAS
-    st.subheader("3. Visualización de Tendencias Históricas")
-    
-    st.markdown("""
-    <p>La visualización gráfica de series temporales es fundamental para identificar patrones que no son evidentes en 
-    tablas numéricas. Los gráficos permiten detectar tendencias generales, ciclos económicos, puntos de inflexión, y 
-    eventos anómalos. En este caso, se presentan múltiples perspectivas: evolución absoluta del gasto, tasas de crecimiento 
-    anual, y análisis de aceleración/desaceleración del crecimiento.</p>
-    """, unsafe_allow_html=True)
-    
-    fig_total = go.Figure()
-    
-    fig_total.add_trace(go.Scatter(
-        x=total_sorted["Year"],
-        y=total_sorted["Amount"],
-        mode='lines+markers',
-        name='Gasto Total',
-        line=dict(color='#2563eb', width=3),
-        marker=dict(size=6, color='#2563eb'),
-        hovertemplate='<b>Año:</b> %{x}<br><b>Monto:</b> $%{y:,.0f}M<extra></extra>'
-    ))
-    
-    fig_total.update_layout(
-        title="Evolución del Gasto Nacional Total en Salud (1960-2023)",
-        xaxis_title="Año",
-        yaxis_title="Monto (Millones USD)",
-        hovermode='x unified',
-        template="plotly_white",
-        height=500,
-        showlegend=True
-    )
-    
-    st.plotly_chart(fig_total, use_container_width=True)
-    
-    fig_growth = go.Figure()
-    
-    fig_growth.add_trace(go.Bar(
-        x=total_sorted["Year"],
-        y=total_sorted["Growth_Rate"],
-        name='Tasa de Crecimiento Anual',
-        marker_color=total_sorted["Growth_Rate"].apply(
-            lambda x: '#10b981' if x > 0 else '#ef4444'
-        ),
-        hovertemplate='<b>Año:</b> %{x}<br><b>Crecimiento:</b> %{y:.2f}%<extra></extra>'
-    ))
-    
-    z = np.polyfit(range(len(total_sorted)), total_sorted["Growth_Rate"].fillna(0), 2)
-    p = np.poly1d(z)
-    
-    fig_growth.add_trace(go.Scatter(
-        x=total_sorted["Year"],
-        y=p(range(len(total_sorted))),
-        mode='lines',
-        name='Tendencia polinomial',
-        line=dict(color='#dc2626', width=2, dash='dash')
-    ))
-    
-    fig_growth.update_layout(
-        title="Tasa de Crecimiento Anual del Gasto en Salud (%)",
-        xaxis_title="Año",
-        yaxis_title="Crecimiento (%)",
-        template="plotly_white",
-        height=400
-    )
-    
-    st.plotly_chart(fig_growth, use_container_width=True)
-    
-    st.markdown("""
-    <div class="interpretation-box">
-    <p><strong>Interpretación de las tendencias visuales:</strong> El gráfico de evolución muestra una curva exponencial 
-    clara con tres fases distintas: (1) Crecimiento moderado de 1960-1980, (2) Aceleración significativa de 1980-2010 con 
-    la expansión de tecnología médica y envejecimiento poblacional, y (3) Crecimiento sostenido pero con desaceleración 
-    relativa post-2010, posiblemente debido a políticas de contención de costos del ACA. El análisis de tasas de crecimiento 
-    revela volatilidad considerable, con picos que coinciden con eventos como la implementación de Medicare (1966), la 
-    crisis financiera (2008-2009), y la pandemia de COVID-19 (2020-2021). La tendencia polinomial sugiere que, aunque las 
-    tasas porcentuales de crecimiento están disminuyendo, el crecimiento absoluto continúa siendo sustancial.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 4. FORECASTING AVANZADO
-    st.subheader(f"4. Proyecciones y Forecasting a {forecast_periods} Años")
-    
-    st.markdown(f"""
-    <p>El forecasting o pronóstico de series temporales es una herramienta esencial para la planificación estratégica en 
-    salud pública y política económica. En este análisis se emplean múltiples metodologías de proyección que capturan 
-    diferentes aspectos de la dinámica temporal: el suavizado exponencial triple (Holt-Winters) captura nivel, tendencia 
-    y estacionalidad; la regresión polinomial modela relaciones no lineales; y el método ensemble combina múltiples 
-    enfoques para reducir el error de predicción. Se proyecta el gasto en salud para los próximos {forecast_periods} años 
-    (hasta {int(total['Year'].max()) + forecast_periods}), considerando que estos modelos asumen la continuidad de patrones 
-    históricos y no incorporan shocks externos imprevisibles como pandemias o cambios regulatorios radicales.</p>
-    """, unsafe_allow_html=True)
-    
-    # Generar proyecciones
-    ensemble, exp_smooth, poly, linear, future_years = ensemble_forecast(total_prepared, forecast_periods)
-    
-    forecast_df = pd.DataFrame({
-        'Año': future_years,
-        'Ensemble (Recomendado)': ensemble,
-        'Suavizado Exponencial': exp_smooth,
-        'Regresión Polinomial': poly,
-        'Tendencia Lineal': linear
-    })
-    
-    fig_forecast = go.Figure()
-    
-    fig_forecast.add_trace(go.Scatter(
-        x=total_sorted["Year"],
-        y=total_sorted["Amount"],
-        mode='lines+markers',
-        name='Datos Históricos',
-        line=dict(color='#2563eb', width=3),
-        marker=dict(size=6)
-    ))
-    
-    fig_forecast.add_trace(go.Scatter(
-        x=future_years,
-        y=ensemble,
-        mode='lines+markers',
-        name='Proyección Ensemble',
-        line=dict(color='#10b981', width=3, dash='dash'),
-        marker=dict(size=8, symbol='diamond')
-    ))
-    
-    upper_bound = ensemble * 1.15
-    lower_bound = ensemble * 0.85
-    
-    fig_forecast.add_trace(go.Scatter(
-        x=np.concatenate([future_years, future_years[::-1]]),
-        y=np.concatenate([upper_bound, lower_bound[::-1]]),
-        fill='toself',
-        fillcolor='rgba(16, 185, 129, 0.2)',
-        line=dict(color='rgba(255,255,255,0)'),
-        name='Intervalo de confianza (±15%)',
-        showlegend=True
-    ))
-    
-    fig_forecast.add_trace(go.Scatter(
-        x=future_years,
-        y=exp_smooth,
-        mode='lines',
-        name='Suavizado Exponencial',
-        line=dict(color='#f59e0b', width=2, dash='dot'),
-        visible='legendonly'
-    ))
-    
-    fig_forecast.add_trace(go.Scatter(
-        x=future_years,
-        y=poly,
-        mode='lines',
-        name='Regresión Polinomial',
-        line=dict(color='#8b5cf6', width=2, dash='dot'),
-        visible='legendonly'
-    ))
-    
-    fig_forecast.update_layout(
-        title=f"Proyección del Gasto Nacional en Salud hasta {int(future_years[-1])}",
-        xaxis_title="Año",
-        yaxis_title="Monto (Millones USD)",
-        hovermode='x unified',
-        template="plotly_white",
-        height=600
-    )
-    
-    st.plotly_chart(fig_forecast, use_container_width=True)
-    
-    st.write("**Tabla de proyecciones detalladas:**")
-    forecast_display = forecast_df.copy()
-    for col in forecast_display.columns[1:]:
-        forecast_display[col] = forecast_display[col].apply(lambda x: f"${x:,.0f}M")
-    st.dataframe(forecast_display, use_container_width=True)
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        final_forecast = ensemble[-1]
-        st.metric(
-            f"Proyección para {int(future_years[-1])}",
-            f"${final_forecast:,.0f}M"
-        )
-    with col2:
-        forecast_growth = ((ensemble[-1] - total_sorted['Amount'].iloc[-1]) / total_sorted['Amount'].iloc[-1]) * 100
-        st.metric(
-            f"Crecimiento proyectado ({forecast_periods} años)",
-            f"{forecast_growth:.1f}%"
-        )
-    with col3:
-        annual_growth_forecast = ((ensemble[-1] / total_sorted['Amount'].iloc[-1]) ** (1/forecast_periods) - 1) * 100
-        st.metric(
-            "CAGR proyectado",
-            f"{annual_growth_forecast:.2f}%"
-        )
-    
-    st.markdown(f"""
-    <div class="interpretation-box">
-    <p><strong>Interpretación del forecasting:</strong> El modelo ensemble proyecta que el gasto nacional en salud alcanzará 
-    aproximadamente ${ensemble[-1]:,.0f} millones de dólares en {int(future_years[-1])}, lo que representa un crecimiento 
-    del {forecast_growth:.1f}% respecto al último valor observado en {int(total_sorted['Year'].iloc[-1])}. La tasa de 
-    crecimiento anual compuesta proyectada (CAGR) de {annual_growth_forecast:.2f}% es ligeramente inferior al crecimiento 
-    histórico de {avg_annual:.2f}%, sugiriendo una moderación en la expansión del gasto.</p>
-    </div>
-    """, unsafe_allow_html=True)
 
 st.markdown("---")
 # ============================================
