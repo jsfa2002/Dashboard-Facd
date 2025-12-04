@@ -14,8 +14,12 @@ Fuente oficial: [CMS.gov - National Health Expenditure Accounts](https://www.cms
 # --- Cargar datos ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv("nhe2023/NHE2023.csv")
+    try:
+        df = pd.read_csv("nhe2023/NHE2023.csv", encoding="utf-8")
+    except UnicodeDecodeError:
+        df = pd.read_csv("nhe2023/NHE2023.csv", encoding="latin1")  # alternativa segura
     return df
+
 
 nhe = load_data()
 
