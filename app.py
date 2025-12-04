@@ -493,74 +493,6 @@ with col3:
 
 st.markdown("---")
 
-# FOOTER
-st.markdown("""
-<div style='text-align: center; color: #666; padding: 20px;'>
-<p><strong>Desarrollado por:</strong> Juan Sebastián Fajardo Acevedo y Miguel Ángel Vargas Hernández</p>
-<p><strong>Universidad de La Sabana - 2025</strong></p>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown("---")
-# ============================================
-# DESCARGA DE DATOS
-# ============================================
-st.header("Descarga de Datos Procesados")
-st.markdown("""
-<p>Esta sección permite descargar los datos procesados y las proyecciones generadas durante el análisis. Los archivos CSV 
-pueden ser utilizados para análisis adicionales, reportes, o integración con otras herramientas analíticas.</p>
-""", unsafe_allow_html=True)
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    if len(total) > 0:
-        csv_total = total.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Descargar Total NHE",
-            data=csv_total,
-            file_name=f'total_nhe_{years[0]}_{years[1]}.csv',
-            mime='text/csv'
-        )
-
-with col2:
-    if len(sub_nhe) > 0:
-        csv_related = sub_nhe.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Descargar Variables Relacionadas",
-            data=csv_related,
-            file_name=f'related_vars_{years[0]}_{years[1]}.csv',
-            mime='text/csv'
-        )
-
-with col3:
-    csv_full = filtered.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="Descargar Dataset Completo Filtrado",
-        data=csv_full,
-        file_name=f'nhe_complete_{years[0]}_{years[1]}.csv',
-        mime='text/csv'
-    )
-
-# ============================================
-# FOOTER
-# ============================================
-st.markdown("---")
-st.markdown("""
-<div style='text-align: center; color: #666; padding: 30px; background-color: #f8f9fa; border-radius: 10px;'>
-<h4>Fundamentos para el Análisis de Datos (FACD)</h4>
-<p><strong>Desarrollado por:</strong> Juan Sebastián Fajardo Acevedo y Miguel Ángel Vargas Hernández</p>
-<p><strong>Docente:</strong> Ana María Gómez Lamus, M.Sc. en Estadística</p>
-<p><strong>Institución:</strong> Universidad de La Sabana</p>
-<p><strong>Año:</strong> 2025</p>
-<p><strong>Datos actualizados al:</strong> {}</p>
-<hr style='margin: 20px 0; border: none; border-top: 1px solid #ddd;'>
-<p style='font-size: 0.9em; color: #888;'>Este dashboard representa un análisis académico con fines educativos. 
-Las proyecciones son indicativas y no constituyen asesoría financiera o política. Para decisiones estratégicas, 
-consulte con expertos en política de salud y análisis económico.</p>
-</div>
-""".format(int(nhe['Year'].max())), unsafe_allow_html=True)
-st.markdown("---")
 # ============================================
 # SEGUNDO RETO
 # ============================================
@@ -1029,6 +961,7 @@ else:
             else:
                 st.warning(f"La categoría {forecast_category} no tiene suficientes datos históricos (mínimo 10 puntos) para generar proyecciones confiables.")
 st.markdown("---")
+
 # ============================================
 # CONCLUSIONES GENERALES
 # ============================================
@@ -1123,6 +1056,7 @@ que incorpore variables exógenas (demográficas, económicas, tecnológicas).</
 """, unsafe_allow_html=True)
 
 st.markdown("---")
+
 # ============================================
 # DESCARGA DE DATOS
 # ============================================
@@ -1145,6 +1079,10 @@ with col1:
         )
 
 with col2:
+    # Inicializar sub_nhe como DataFrame vacío si no se definió en el segundo reto
+    if 'sub_nhe' not in locals():
+        sub_nhe = pd.DataFrame()
+    
     if len(sub_nhe) > 0:
         csv_related = sub_nhe.to_csv(index=False).encode('utf-8')
         st.download_button(
@@ -1170,7 +1108,7 @@ st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666; padding: 30px; background-color: #f8f9fa; border-radius: 10px;'>
 <h4>Fundamentos para el Análisis de Datos (FACD)</h4>
-<p><strong>Desarrollado por:</strong> Juan Sebastián Fajardo Acevedo y Miguel Ängel Vargas Hernández</p>
+<p><strong>Desarrollado por:</strong> Juan Sebastián Fajardo Acevedo y Miguel Ángel Vargas Hernández</p>
 <p><strong>Docente:</strong> Ana María Gómez Lamus, M.Sc. en Estadística</p>
 <p><strong>Institución:</strong> Universidad de La Sabana</p>
 <p><strong>Año:</strong> 2025</p>
