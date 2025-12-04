@@ -51,7 +51,7 @@ st.markdown("""
 # FUNCIONES DE CARGA Y PREPROCESAMIENTO
 # ============================================
 @st.cache_data
-def load_data():
+def load_data(debug_mode=False):
     """Carga, limpia y estructura los datos NHE correctamente"""
     import pandas as pd
     
@@ -63,12 +63,6 @@ def load_data():
         st.error("Error: No se encontró el archivo NHE2023.csv")
         st.stop()
     
-    #  DEBUG 1: Ver primeras filas crudas
-    st.sidebar.write("###  DEBUG: Datos Crudos")
-    st.sidebar.write(f"**Columnas detectadas:** {len(df.columns)}")
-    st.sidebar.write(f"**Primeras columnas:** {df.columns[:5].tolist()}")
-    st.sidebar.dataframe(df.head(3))
-    
     # --- Normalizar columnas ---
     df.columns = df.columns.str.strip()
     df.rename(columns={df.columns[0]: "Expenditure_Type"}, inplace=True)
@@ -77,16 +71,8 @@ def load_data():
     df = df[df["Expenditure_Type"].notna()]
     df = df[~df["Expenditure_Type"].str.contains("^Source|^Table|^NOTE:|^Funds", case=False, na=False, regex=True)]
     
-    #  DEBUG 2: Ver datos después de limpieza
-    st.sidebar.write(f"**Filas después de limpieza:** {len(df)}")
-    
     # --- Transformar formato ancho a largo ---
     df_melt = df.melt(id_vars=["Expenditure_Type"], var_name="Year", value_name="Amount")
-    
-    #  DEBUG 3: Ver datos después de melt
-    st.sidebar.write(f"**Registros después de melt:** {len(df_melt)}")
-    st.sidebar.write("**Muestra después de melt:**")
-    st.sidebar.dataframe(df_melt.head(10))
     
     # --- Limpiar columna Year ---
     df_melt["Year"] = df_melt["Year"].astype(str).str.extract(r"(\d{4})", expand=False)
@@ -99,6 +85,7 @@ def load_data():
         .str.replace(",", "", regex=False)
         .str.replace("$", "", regex=False)
         .str.replace("-", "0", regex=False)
+        .str.strip()
     )
     
     df_melt["Amount"] = pd.to_numeric(
@@ -106,42 +93,57 @@ def load_data():
         errors="coerce"
     )
     
-    #  DEBUG 4: Ver conversión de montos
-    st.sidebar.write("**Muestra después de limpiar montos:**")
-    sample = df_melt[df_melt["Expenditure_Type"].str.contains("Total National", na=False)].head(10)
-    st.sidebar.dataframe(sample)
-    
     # --- Quitar valores nulos ---
     df_melt = df_melt.dropna(subset=["Year", "Amount"])
     
-    # --- **CRÍTICO: Eliminar duplicados ANTES de agrupar** ---
-    duplicates_before = len(df_melt)
+    # --- **CRÍTICO: Eliminar duplicados** ---
     df_melt = df_melt.drop_duplicates(subset=["Expenditure_Type", "Year"], keep="first")
-    duplicates_removed = duplicates_before - len(df_melt)
-    
-    #  DEBUG 5: Verificar duplicados
-    st.sidebar.write(f"**Duplicados eliminados:** {duplicates_removed}")
     
     # --- Asegurar que Year sea entera y ordenada ---
     df_melt["Year"] = df_melt["Year"].astype(int)
     df_melt = df_melt.sort_values(["Expenditure_Type", "Year"]).reset_index(drop=True)
     
-    #  DEBUG 6: Verificar datos finales de Total NHE
-    total_nhe = df_melt[df_melt["Expenditure_Type"].str.contains("Total National", na=False)]
-    if len(total_nhe) > 0:
-        st.sidebar.write("###  Datos Finales: Total National Health Expenditures")
-        st.sidebar.write(f"**Registros:** {len(total_nhe)}")
-        st.sidebar.write(f"**Años únicos:** {total_nhe['Year'].nunique()}")
-        st.sidebar.write(f"**Rango años:** {total_nhe['Year'].min()} - {total_nhe['Year'].max()}")
-        st.sidebar.write(f"**Valor mínimo:** ${total_nhe['Amount'].min():,.0f}M")
-        st.sidebar.write(f"**Valor máximo:** ${total_nhe['Amount'].max():,.0f}M")
-        st.sidebar.write("**Primeros 5 años:**")
-        st.sidebar.dataframe(total_nhe.head(5))
-        st.sidebar.write("**Últimos 5 años:**")
-        st.sidebar.dataframe(total_nhe.tail(5))
+    # DEBUG CONDICIONAL
+    if debug_mode:
+        with st.expander(" DEBUG: Diagnóstico de Carga de Datos", expanded=True):
+            st.write("### Estructura del CSV Original")
+            st.write(f"**Total de columnas:** {len(df.columns)}")
+            st.write(f"**Total de filas (después de limpieza):** {len(df)}")
+            st.write(f"**Primeras 5 columnas:** {df.columns[:5].tolist()}")
+            
+            st.write("###  Datos después de Melt")
+            st.write(f"**Total de registros:** {len(df_melt)}")
+            st.dataframe(df_melt.head(10), use_container_width=True)
+            
+            st.write("###  Verificación: Total National Health Expenditures")
+            total_nhe_debug = df_melt[df_melt["Expenditure_Type"].str.contains("Total National", case=False, na=False)]
+            
+            if len(total_nhe_debug) > 0:
+                st.write(f"**✓ Registros encontrados:** {len(total_nhe_debug)}")
+                st.write(f"**✓ Años únicos:** {total_nhe_debug['Year'].nunique()}")
+                st.write(f"**✓ Rango de años:** {total_nhe_debug['Year'].min()} - {total_nhe_debug['Year'].max()}")
+                st.write(f"**✓ Valor mínimo:** ${total_nhe_debug['Amount'].min():,.0f}M")
+                st.write(f"**✓ Valor máximo:** ${total_nhe_debug['Amount'].max():,.0f}M")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write("**Primeros 5 años:**")
+                    st.dataframe(total_nhe_debug.head(5))
+                with col2:
+                    st.write("**Últimos 5 años:**")
+                    st.dataframe(total_nhe_debug.tail(5))
+                
+                # ALERTA SI HAY PROBLEMA
+                if total_nhe_debug['Amount'].min() == total_nhe_debug['Amount'].max():
+                    st.error(" **PROBLEMA DETECTADO:** Todos los valores son idénticos!")
+                    st.write("**Diagnóstico:** El CSV puede tener un formato diferente al esperado.")
+                    st.write("**Acción sugerida:** Descarga el archivo CSV y verifica manualmente su estructura.")
+            else:
+                st.error(" No se encontró 'Total National Health Expenditures'")
+                st.write("**Categorías disponibles:**")
+                st.write(df_melt['Expenditure_Type'].unique()[:20])
     
     return df_melt
-
 
 def prepare_time_series(data, fill_missing=True):
     """Prepara una serie temporal para modelado"""
@@ -270,21 +272,18 @@ def ensemble_forecast(data, periods=10):
 # CARGA DE DATOS
 # ============================================
 
-nhe = load_data()
+nhe = load_data(debug_mode=debug_mode)
 
-# **DIAGNÓSTICO: Verificar si hay duplicados**
-duplicates = nhe.groupby(['Expenditure_Type', 'Year']).size().reset_index(name='count')
-duplicates = duplicates[duplicates['count'] > 1]
+nhe = load_data(debug_mode=debug_mode)
 
-if len(duplicates) > 0:
-    st.error(" Se detectaron registros duplicados:")
-    st.dataframe(duplicates.head(20))
-    st.info("Limpiando duplicados automáticamente...")
-    nhe = nhe.drop_duplicates(subset=['Expenditure_Type', 'Year'], keep='first')
-
-if nhe.empty:
-    st.error("El dataset está vacío. Verifica que el archivo CSV esté bien estructurado.")
-    st.stop()
+# DIAGNÓSTICO DE EMERGENCIA
+if not debug_mode:
+    # Verificación silenciosa
+    total_check = nhe[nhe["Expenditure_Type"].str.contains("Total National", case=False, na=False)]
+    if len(total_check) > 0:
+        if total_check['Amount'].nunique() == 1:
+            st.error(" **ERROR CRÍTICO:** Todos los valores son idénticos. Activa el modo DEBUG en el sidebar para más información.")
+            st.stop()
 
 # ============================================
 # HEADER Y CONTEXTO PRINCIPAL
@@ -321,7 +320,7 @@ y gastos relacionados con seguros de salud.</p>
 # ============================================
 
 st.sidebar.header("Configuración del Análisis")
-
+debug_mode = st.sidebar.checkbox("Activar modo DEBUG", value=False)
 years = st.sidebar.slider(
     "Selecciona rango de años",
     int(nhe["Year"].min()),
