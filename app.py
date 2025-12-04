@@ -653,26 +653,50 @@ else:
     for col in forecast_display.columns[1:]:
         forecast_display[col] = forecast_display[col].apply(lambda x: f"${x:,.0f}M")
     st.dataframe(forecast_display, use_container_width=True)
-# Métricas de proyección
-col1, col2, col3 = st.columns(3)
-with col1:
-    final_forecast = ensemble[-1]
-    st.metric(
-        f"Proyección para {int(future_years[-1])}",
-        f"${final_forecast:,.0f}M"
-    )
-with col2:
-    forecast_growth = ((ensemble[-1] - total_sorted['Amount'].iloc[-1]) / total_sorted['Amount'].iloc[-1]) * 100
-    st.metric(
-        f"Crecimiento proyectado ({forecast_periods} años)",
-        f"{forecast_growth:.1f}%"
-    )
-with col3:
-    annual_growth_forecast = ((ensemble[-1] / total_sorted['Amount'].iloc[-1]) ** (1/forecast_periods) - 1) * 100
-    st.metric(
-        "CAGR proyectado",
-        f"{annual_growth_forecast:.2f}%"
-    )
+st.dataframe(forecast_display, use_container_width=True)
+    
+    # Métricas de proyección
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        final_forecast = ensemble[-1]
+        st.metric(
+            f"Proyección para {int(future_years[-1])}",
+            f"${final_forecast:,.0f}M"
+        )
+    with col2:
+        forecast_growth = ((ensemble[-1] - total_sorted['Amount'].iloc[-1]) / total_sorted['Amount'].iloc[-1]) * 100
+        st.metric(
+            f"Crecimiento proyectado ({forecast_periods} años)",
+            f"{forecast_growth:.1f}%"
+        )
+    with col3:
+        annual_growth_forecast = ((ensemble[-1] / total_sorted['Amount'].iloc[-1]) ** (1/forecast_periods) - 1) * 100
+        st.metric(
+            "CAGR proyectado",
+            f"{annual_growth_forecast:.2f}%"
+        )
+    
+    st.markdown(f"""
+    <div class="interpretation-box">
+    <p><strong>Interpretación del forecasting:</strong> El modelo ensemble proyecta que el gasto nacional en salud alcanzará 
+    aproximadamente ${ensemble[-1]:,.0f} millones de dólares en {int(future_years[-1])}, lo que representa un crecimiento 
+    del {forecast_growth:.1f}% respecto al último valor observado en {int(total_sorted['Year'].iloc[-1])}. La tasa de 
+    crecimiento anual compuesta proyectada (CAGR) de {annual_growth_forecast:.2f}% es ligeramente inferior al crecimiento 
+    histórico de {avg_annual:.2f}%, sugiriendo una moderación en la expansión del gasto. Esta desaceleración podría 
+    atribuirse a diversos factores: mayor adopción de medicina preventiva, eficiencias operativas en el sistema de salud, 
+    presión política para contener costos, y posible estabilización demográfica post-baby boomer.</p>
+    
+    <p>El intervalo de confianza de ±15% refleja la incertidumbre inherente a cualquier proyección de largo plazo. Factores 
+    que podrían llevar el gasto hacia el límite superior incluyen: nuevas pandemias, avances tecnológicos costosos (terapias 
+    génicas, medicina de precisión), expansión adicional de cobertura, o aumento en longevidad. Factores que podrían 
+    contener el gasto incluyen: reformas estructurales del sistema, mayor competencia en el mercado de seguros, adopción 
+    de telemedicina, o cambios en patrones de utilización.</p>
+    
+    <p>Es crucial interpretar estas proyecciones como escenarios plausibles basados en tendencias históricas, no como 
+    predicciones deterministas. Los modelos de series temporales tienen limitaciones inherentes al extrapolar hacia el 
+    futuro, particularmente en horizontes largos donde la probabilidad de cambios estructurales aumenta significativamente.</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("---")
 # ============================================
