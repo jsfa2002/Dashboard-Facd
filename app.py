@@ -670,9 +670,9 @@ futuro, particularmente en horizontes largos donde la probabilidad de cambios es
 </div>
 """, unsafe_allow_html=True)
 st.markdown("---")
-============================================
-SEGUNDO RETO
-============================================
+# ============================================
+# SEGUNDO RETO
+# ============================================
 st.header("Segundo Reto: Workers' Compensation y Variables Relacionadas")
 st.markdown("""
 <div class="context-box">
@@ -1137,9 +1137,9 @@ if selected_vars:
         else:
             st.warning(f"La categoría {forecast_category} no tiene suficientes datos históricos (mínimo 10 puntos) para generar proyecciones confiables.")
 st.markdown("---")
-============================================
-CONCLUSIONES GENERALES
-============================================
+# ============================================
+# CONCLUSIONES GENERALES
+# ============================================
 st.header("Síntesis y Conclusiones Generales del Análisis")
 st.markdown("""
 <p>El análisis integral de los National Health Expenditures (1960-2023) proporciona una visión comprehensiva de la evolución 
@@ -1225,9 +1225,9 @@ que incorpore variables exógenas (demográficas, económicas, tecnológicas).</
 </div>
 """, unsafe_allow_html=True)
 st.markdown("---")
-============================================
-DESCARGA DE DATOS
-============================================
+# ============================================
+# DESCARGA DE DATOS
+# ============================================
 st.header("Descarga de Datos Procesados")
 st.markdown("""
 <p>Esta sección permite descargar los datos procesados y las proyecciones generadas durante el análisis. Los archivos CSV 
@@ -1260,9 +1260,9 @@ data=csv_full,
 file_name=f'nhe_complete_{years[0]}_{years[1]}.csv',
 mime='text/csv'
 )
-============================================
-FOOTER
-============================================
+# ============================================
+# FOOTER
+# ============================================
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666; padding: 30px; background-color: #f8f9fa; border-radius: 10px;'>
@@ -1278,4 +1278,4 @@ Las proyecciones son indicativas y no constituyen asesoría financiera o políti
 consulte con expertos en política de salud y análisis económico.</p>
 </div>
 """.format(int(nhe['Year'].max())), unsafe_allow_html=True)
-```
+
