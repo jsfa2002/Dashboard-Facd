@@ -103,48 +103,7 @@ def load_data(debug_mode=False):
     df_melt["Year"] = df_melt["Year"].astype(int)
     df_melt = df_melt.sort_values(["Expenditure_Type", "Year"]).reset_index(drop=True)
     
-    # DEBUG CONDICIONAL
-    if debug_mode:
-        with st.expander(" DEBUG: Diagnóstico de Carga de Datos", expanded=True):
-            st.write("### Estructura del CSV Original")
-            st.write(f"**Total de columnas:** {len(df.columns)}")
-            st.write(f"**Total de filas (después de limpieza):** {len(df)}")
-            st.write(f"**Primeras 5 columnas:** {df.columns[:5].tolist()}")
-            
-            st.write("###  Datos después de Melt")
-            st.write(f"**Total de registros:** {len(df_melt)}")
-            st.dataframe(df_melt.head(10), use_container_width=True)
-            
-            st.write("###  Verificación: Total National Health Expenditures")
-            total_nhe_debug = df_melt[df_melt["Expenditure_Type"].str.contains("Total National", case=False, na=False)]
-            
-            if len(total_nhe_debug) > 0:
-                st.write(f"**✓ Registros encontrados:** {len(total_nhe_debug)}")
-                st.write(f"**✓ Años únicos:** {total_nhe_debug['Year'].nunique()}")
-                st.write(f"**✓ Rango de años:** {total_nhe_debug['Year'].min()} - {total_nhe_debug['Year'].max()}")
-                st.write(f"**✓ Valor mínimo:** ${total_nhe_debug['Amount'].min():,.0f}M")
-                st.write(f"**✓ Valor máximo:** ${total_nhe_debug['Amount'].max():,.0f}M")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write("**Primeros 5 años:**")
-                    st.dataframe(total_nhe_debug.head(5))
-                with col2:
-                    st.write("**Últimos 5 años:**")
-                    st.dataframe(total_nhe_debug.tail(5))
-                
-                # ALERTA SI HAY PROBLEMA
-                if total_nhe_debug['Amount'].min() == total_nhe_debug['Amount'].max():
-                    st.error(" **PROBLEMA DETECTADO:** Todos los valores son idénticos!")
-                    st.write("**Diagnóstico:** El CSV puede tener un formato diferente al esperado.")
-                    st.write("**Acción sugerida:** Descarga el archivo CSV y verifica manualmente su estructura.")
-            else:
-                st.error(" No se encontró 'Total National Health Expenditures'")
-                st.write("**Categorías disponibles:**")
-                st.write(df_melt['Expenditure_Type'].unique()[:20])
-    
     return df_melt
-
 def prepare_time_series(data, fill_missing=True):
     """Prepara una serie temporal para modelado"""
     ts_data = data.copy().sort_values('Year')
@@ -274,8 +233,6 @@ def ensemble_forecast(data, periods=10):
 
 nhe = load_data(debug_mode=debug_mode)
 
-
-
 # DIAGNÓSTICO DE EMERGENCIA
 if not debug_mode:
     # Verificación silenciosa
@@ -316,13 +273,36 @@ y gastos relacionados con seguros de salud.</p>
 """, unsafe_allow_html=True)
 
 # ============================================
-# SIDEBAR
+# SIDEBAR Y CARGA DE DATOS
 # ============================================
 
 st.sidebar.header("Configuración del Análisis")
-debug_mode = st.sidebar.checkbox("Activar modo DEBUG", value=False)
 
+# 1. CARGAR DATOS PRIMERO (sin parámetros complejos)
+nhe = load_data(debug_mode=False)
 
+# 2. Verificar que los datos se cargaron correctamente
+if nhe.empty:
+    st.error(" El dataset está vacío. Verifica el archivo CSV.")
+    st.stop()
+
+# 3. CONTROLES DEL SIDEBAR
+years = st.sidebar.slider(
+    "Selecciona rango de años",
+    int(nhe["Year"].min()),
+    int(nhe["Year"].max()),
+    (1980, 2023)
+)
+
+forecast_periods = st.sidebar.slider(
+    "Períodos de proyección (años)",
+    5, 20, 10
+)
+
+show_raw_data = st.sidebar.checkbox("Mostrar datos crudos", value=False)
+show_advanced_metrics = st.sidebar.checkbox("Mostrar métricas avanzadas", value=True)
+
+filtered = nhe[(nhe["Year"] >= years[0]) & (nhe["Year"] <= years[1])].copy()
 # ============================================
 # MÉTRICAS GENERALES
 # ============================================
