@@ -1110,7 +1110,7 @@ st.markdown("""
 <h4>Fundamentos para el Análisis de Datos (FACD)</h4>
 <p><strong>Desarrollado por:</strong> Juan Sebastián Fajardo Acevedo y Miguel Ángel Vargas Hernández</p>
 <p><strong>Docente:</strong> Ana María Gómez Lamus, M.Sc. en Estadística</p>
-<p><strong>Institución:</strong> Universidad de La Sabana</p>
+<p><strong>Institución:</strong> Universidad Escuela Colombiana De Ingeniería Julio Garavito</p>
 <p><strong>Año:</strong> 2025</p>
 <p><strong>Datos actualizados al:</strong> {}</p>
 <hr style='margin: 20px 0; border: none; border-top: 1px solid #ddd;'>
