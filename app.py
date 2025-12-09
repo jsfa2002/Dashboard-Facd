@@ -1300,7 +1300,7 @@ with col2:
 
 st.markdown("""
 <div class="context-box">
-<h4>Hallazgos Clave del Análisis</h4>
+<h4>Hallazgos del Análisis</h4>
 <ol>
     <li><strong>Crecimiento exponencial sostenido del gasto total:</strong> El gasto nacional en salud ha crecido de $253 mil millones en 1980 a $4.87 billones en 2023, con una CAGR del 6.95%. Las proyecciones sugieren que esta tendencia continuará, aunque con moderación gradual de las tasas de crecimiento.</li>
     <li><strong>Heterogeneidad significativa entre categorías:</strong> Workers' Compensation representa una fracción relativamente pequeña y estable del gasto total, mientras que seguros privados y consumo médico han experimentado expansión acelerada. Esta divergencia refleja dinámicas específicas de cada sector.</li>
