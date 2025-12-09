@@ -284,26 +284,34 @@ if show_raw_data:
 st.markdown("---")
 
 # ============================================
-# PRIMER RETO - VERSIÓN CORREGIDA
+# PRIMER RETO
 # ============================================
 
-st.header("Primer Reto: Total National Health Expenditures")
+st.header("Primer Reto: Análisis del Gasto Nacional Total en Salud")
 
 st.markdown("""
 <div class="context-box">
-<h4>Contexto del Ejercicio 1</h4>
-<p><strong>Objetivo:</strong> Analizar la evolución del gasto total en salud de Estados Unidos.</p>
-<p><strong>Variable de interés:</strong> Total National Health Expenditures</p>
+    <h4>Contexto y Definición del Ejercicio</h4>
+    <p><strong>Objetivo Principal:</strong> Analizar la evolución histórica y la tendencia estadística del gasto total en salud en los Estados Unidos (NHE).</p>
+    <p><strong>Variable de Interés:</strong> <em>Total National Health Expenditures</em>.</p>
+    <p><strong>Importancia del Análisis:</strong> Esta variable agregada representa la suma total de los recursos financieros dedicados a la atención médica. Su análisis permite comprender la presión fiscal del sistema de salud sobre la economía y determinar si el crecimiento del gasto sigue un comportamiento lineal o exponencial a lo largo de las décadas.</p>
+    <p><strong>Metodología:</strong>
+        <ol>
+            <li><strong>Diagnóstico de Calidad:</strong> Evaluación de la integridad de los datos (completitud y consistencia).</li>
+            <li><strong>Análisis Descriptivo:</strong> Cálculo de estadísticos básicos y tasas de crecimiento.</li>
+            <li><strong>Modelado de Tendencias:</strong> Visualización de la serie temporal para interpretar patrones históricos.</li>
+        </ol>
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
-# CORRECCIÓN CRÍTICA: Búsqueda más flexible y con diagnóstico
+# Lógica de Búsqueda y Validación de Datos
 total = pd.DataFrame()
 
-# Intentar búsqueda exacta primero
+# 1. Intentar búsqueda exacta
 total = filtered[filtered["Expenditure_Type"] == "Total National Health Expenditures"].copy()
 
-# Si no encuentra, intentar variaciones comunes
+# 2. Si no encuentra, intentar variaciones comunes
 if len(total) == 0:
     variations = [
         "Total National Health Expenditures",
@@ -315,12 +323,12 @@ if len(total) == 0:
     for variation in variations:
         total = filtered[filtered["Expenditure_Type"].str.contains(variation, case=False, na=False, regex=False)].copy()
         if len(total) > 0:
-            st.info(f"✓ Encontrado usando variación: '{variation}'")
+            st.info(f"Nota: Se localizó la variable utilizando la variación: '{variation}'")
             break
 
-# Si aún no encuentra, buscar la categoría con más registros que contenga "Total"
+# 3. Si aún no encuentra, buscar la categoría con más registros que contenga "Total"
 if len(total) == 0:
-    st.warning("⚠️ No se encontró categoría exacta. Buscando alternativas...")
+    st.warning("Advertencia: No se encontró la categoría exacta. Buscando alternativas disponibles en el dataset...")
     
     total_candidates = filtered[filtered["Expenditure_Type"].str.contains("Total", case=False, na=False)]
     
@@ -328,38 +336,36 @@ if len(total) == 0:
         # Agrupar por categoría y contar registros
         category_counts = total_candidates.groupby("Expenditure_Type").size().sort_values(ascending=False)
         
-        st.write("**Categorías disponibles con 'Total':**")
+        st.write("**Categorías disponibles que contienen el término 'Total':**")
         st.dataframe(pd.DataFrame({
             "Categoría": category_counts.index,
-            "Registros": category_counts.values
+            "Registros Disponibles": category_counts.values
         }))
         
         # Tomar la primera (la que tiene más registros)
         selected_category = category_counts.index[0]
         total = filtered[filtered["Expenditure_Type"] == selected_category].copy()
-        st.success(f"✓ Usando: {selected_category} ({len(total)} registros)")
+        st.success(f"Selección Automática: Se utilizará '{selected_category}' por tener la mayor cantidad de registros históricos ({len(total)}).")
 
-# Si definitivamente no encuentra nada, mostrar todas las categorías
+# 4. Validación Final (Bloqueo si no hay datos)
 if len(total) == 0:
-    st.error("❌ No se encontró ninguna categoría apropiada para 'Total National Health Expenditures'.")
-    st.write("**Todas las categorías disponibles:**")
+    st.error("Error Crítico: No fue posible localizar ninguna categoría apropiada para 'Total National Health Expenditures'. Verifique la integridad del archivo de origen.")
+    st.write("**Listado de todas las categorías disponibles en el archivo:**")
     all_categories = sorted(filtered["Expenditure_Type"].unique())
     st.dataframe(pd.DataFrame({"Categoría": all_categories}))
     st.stop()
 
-# Verificar que tenemos datos variados
+# 5. Verificación de Varianza en los Datos
 if len(total) > 0:
     unique_values = total['Amount'].nunique()
     
     if unique_values == 1:
-        st.error(f"⚠️ PROBLEMA DETECTADO: Todos los valores son idénticos ({total['Amount'].iloc[0]:,.0f})")
-        st.write("**Primeros 10 registros:**")
+        st.error(f"Error de Integridad: Todos los valores registrados para esta categoría son idénticos ({total['Amount'].iloc[0]:,.0f}). Esto indica un posible error en la fuente de datos o en el procesamiento previo.")
+        st.write("**Muestra de los primeros 10 registros:**")
         st.dataframe(total.head(10))
-        st.write("**Últimos 10 registros:**")
-        st.dataframe(total.tail(10))
         st.stop()
     else:
-        st.success(f"✓ Categoría válida: {total['Expenditure_Type'].iloc[0]} ({len(total)} registros, {unique_values} valores únicos)")
+        st.success(f"Validación Exitosa: Categoría '{total['Expenditure_Type'].iloc[0]}' lista para análisis. (Registros procesados: {len(total)} | Valores únicos: {unique_values})")
 
 # Preparar serie temporal
 total_prepared = prepare_time_series(total, fill_missing=True)
@@ -390,6 +396,19 @@ with col3:
     cv = (total['Amount'].std() / total['Amount'].mean()) * 100
     st.metric("Coef. de variación", f"{cv:.1f}%")
 
+# BLOQUE DE INTERPRETACIÓN 
+st.markdown("""
+<div class="interpretation-box">
+    <h5>Interpretación del Diagnóstico</h5>
+    <ul>
+        <li><strong>Integridad de la Información:</strong> La serie presenta una completitud del <strong>{completeness:.1f}%</strong> (0 valores faltantes), lo cual garantiza la fiabilidad técnica para la aplicación de modelos de pronóstico sin riesgo de sesgo por imputación de datos.</li>
+        <li><strong>Dinámica de Crecimiento:</strong> Se observa una expansión masiva del gasto, multiplicándose aproximadamente 19 veces desde el inicio del periodo (Crecimiento total del <strong>{growth:.1f}%</strong>). La Tasa de Crecimiento Anual Compuesto (CAGR) del <strong>{avg_annual:.2f}%</strong> indica una aceleración sostenida muy superior a la inflación histórica promedio, lo que sugiere que el gasto en salud crece estructuralmente más rápido que la economía general.</li>
+        <li><strong>Dispersión y Variabilidad:</strong> El Coeficiente de Variación del <strong>{cv:.1f}%</strong> es elevado. En esta serie temporal, este nivel de variabilidad indica un comportamiento no estacionario, donde la media histórica no refleja adecuadamente las fluctuaciones recientes del indicador.</li>
+    </ul>
+</div>
+""".format(completeness=completeness, growth=growth, avg_annual=avg_annual, cv=cv), unsafe_allow_html=True)
+
+
 # 2. VISUALIZACIÓN
 st.subheader("2. Visualización de Tendencias")
 
@@ -418,6 +437,18 @@ fig_total.update_layout(
 )
 
 st.plotly_chart(fig_total, use_container_width=True)
+
+st.markdown("""
+<div class="interpretation-box">
+    <h5>Análisis de la Tendencia Histórica</h5>
+    <ul>
+        <li><strong>Comportamiento Monótono Creciente:</strong> La gráfica muestra una trayectoria ascendente sostenida a lo largo del periodo analizado. La forma convexa de la curva sugiere que la variación anual no es uniforme, sino que el ritmo de crecimiento se intensifica progresivamente.</li>
+        <li><strong>No Estacionariedad de la Serie:</strong> La representación temporal evidencia cambios notorios en el nivel y la variabilidad del indicador entre 1980 y 2023. Estas variaciones implican que las propiedades estadísticas de la serie no permanecen constantes en el tiempo.</li>
+        <li><strong>Pendiente y Aceleración:</strong> La inclinación de la curva se incrementa conforme avanza el periodo, lo que refleja una aceleración en el comportamiento del indicador. La ausencia de descensos marcados sugiere que los valores presentan una evolución predominantemente ascendente sin interrupciones significativas.</li>
+    </ul>
+</div>
+""", unsafe_allow_html=True)
+
 
 # 3. FORECASTING
 st.subheader(f"3. Proyecciones a {forecast_periods} Años")
@@ -491,6 +522,31 @@ with col3:
     annual_growth_forecast = ((ensemble[-1] / total_sorted['Amount'].iloc[-1]) ** (1/forecast_periods) - 1) * 100
     st.metric("CAGR proyectado", f"{annual_growth_forecast:.2f}%")
 
+st.markdown("""
+<div class="interpretation-box">
+    <h5>Análisis de Proyecciones</h5>
+    <p>
+        Para la estimación del gasto futuro se empleó un ensamble de modelos, es decir, una combinación de varias técnicas de pronóstico. Este enfoque permite integrar diferentes maneras de describir la tendencia histórica y obtener una proyección que refleje distintas dinámicas posibles del crecimiento del indicador.
+    </p>
+    <p>
+        <strong>1. Tendencia Lineal (Baseline):</strong> Esta columna corresponde a un modelo que asume un incremento constante a lo largo del tiempo. Su función dentro del análisis es ofrecer un punto de referencia basado en un comportamiento simple y estable, útil para comparar cómo se alejan o se aproximan los demás modelos respecto a un crecimiento uniforme.
+    </p>
+    <p>
+        <strong>2. Regresión Polinomial:</strong> Este modelo incorpora la posibilidad de que el ritmo de crecimiento cambie con el tiempo. Al incluir términos de mayor grado, puede representar aceleraciones o curvaturas que se observan en la serie histórica. Por este motivo, suele reflejar escenarios donde las variaciones recientes influyen de manera más marcada en las proyecciones.
+    </p>
+    <p>
+        <strong>3. Suavizado Exponencial (Holt-Winters):</strong> Este método asigna más peso a los datos recientes, permitiendo que la proyección responda a cambios recientes en la trayectoria del gasto. La estimación resultante suele ubicarse entre la estabilidad de la tendencia lineal y la mayor sensibilidad de la regresión polinomial.
+    </p>
+    <p>
+        <strong>4. Modelo Ensemble (Resultado Final):</strong> La columna "Ensemble" y la curva punteada del gráfico representan la combinación ponderada de los modelos anteriores. Este valor resume la contribución de cada enfoque y estima un gasto cercano a <strong>$5,525,943 Millones</strong> para 2033. La Tasa de Crecimiento Anual Compuesto (CAGR) asociada es del <strong>1.28%</strong>, lo cual es menor que el CAGR histórico del 6.95%, indicando que el ritmo de expansión proyectado es más moderado que el observado en décadas previas.
+    </p>
+    <p>
+        <strong>Conclusión del Pronóstico:</strong> Las proyecciones apuntan hacia un escenario de crecimiento más lento en comparación con la trayectoria histórica. Aunque el gasto continúa aumentando en términos nominales, la velocidad a la que lo hace se reduce, lo que se refleja en un crecimiento acumulado cercano al 13.6% durante la próxima década. El intervalo de confianza del 95% (área sombreada en el gráfico) muestra el rango de valores plausibles según los modelos utilizados y resume la incertidumbre inherente a las proyecciones de largo plazo.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+
 st.markdown("---")
 
 # ============================================
@@ -538,78 +594,86 @@ else:
     # 1. DIAGNÓSTICO DE DATOS FALTANTES
     st.subheader("1. Diagnóstico Integral de Datos Faltantes")
     st.markdown("""
-    <p>El análisis de datos faltantes es particularmente importante en categorías específicas del NHE, ya que algunas 
-    categorías se implementaron en años posteriores a 1960 o sufrieron redefiniciones metodológicas. La presencia de datos 
-    faltantes no necesariamente indica problemas de calidad, sino que puede reflejar cambios en la clasificación de gastos, 
-    creación de nuevas categorías, o consolidación de categorías existentes. Este diagnóstico permite identificar qué 
-    categorías tienen cobertura temporal completa y cuáles requieren tratamiento especial en el análisis.</p>
+    <p>La revisión de integridad permite verificar la consistencia histórica de las series seleccionadas. 
+    Se examina la presencia de valores faltantes para asegurar que las comparaciones estadísticas se realicen 
+    sobre registros completos y comparables en el tiempo.</p>
     """, unsafe_allow_html=True)
 
     # Calcular estadísticas de datos faltantes
     missing_summary = sub_nhe.groupby("Expenditure_Type").agg({
         "Amount": [
-            ("Total", "count"),
+            ("Total Registros", "size"),
             ("Faltantes", lambda x: x.isna().sum()),
             ("% Faltantes", lambda x: (x.isna().sum() / len(x)) * 100)
         ]
     }).reset_index()
 
-    missing_summary.columns = ["Tipo de Gasto", "Total Registros", "Valores Faltantes", "% Faltantes"]
-    missing_summary = missing_summary.sort_values("Valores Faltantes", ascending=False)
+    missing_summary.columns = ["Tipo de Gasto", "Total", "Nulos", "% Nulos"]
+    missing_summary = missing_summary.sort_values("% Nulos", ascending=False)
 
-    st.dataframe(missing_summary.style.format({
-        "Total Registros": "{:.0f}",
-        "Valores Faltantes": "{:.0f}",
-        "% Faltantes": "{:.2f}%"
-    }).background_gradient(subset=["% Faltantes"], cmap="Reds"), use_container_width=True)
+    # Calcular total de nulos en todo el subconjunto
+    total_missing_count = missing_summary["Nulos"].sum()
 
-    # Identificar variable con más faltantes
-    max_missing = missing_summary.iloc[0]
-    st.success(f"Variable con mayor proporción de datos faltantes: {max_missing['Tipo de Gasto']} con {int(max_missing['Valores Faltantes'])} valores ausentes ({max_missing['% Faltantes']:.2f}%)")
-
-    # Visualización de datos faltantes
-    fig_missing = go.Figure()
-
-    fig_missing.add_trace(go.Bar(
-        x=missing_summary["Tipo de Gasto"],
-        y=missing_summary["% Faltantes"],
-        marker=dict(
-            color=missing_summary["% Faltantes"],
-            colorscale='Reds',
-            showscale=True,
-            colorbar=dict(title="% Faltantes")
+    st.dataframe(
+        missing_summary.style.format({"% Nulos": "{:.1f}%"}).background_gradient(
+            subset=["% Nulos"], cmap="Reds"
         ),
-        text=missing_summary["% Faltantes"].apply(lambda x: f"{x:.1f}%"),
-        textposition='outside',
-        hovertemplate='<b>%{x}</b><br>Faltantes: %{y:.2f}%<extra></extra>'
-    ))
-
-    fig_missing.update_layout(
-        title="Análisis de Datos Faltantes por Categoría",
-        xaxis_title="Categoría de Gasto",
-        yaxis_title="Porcentaje de Datos Faltantes (%)",
-        template="plotly_white",
-        height=500,
-        xaxis_tickangle=-45
+        use_container_width=True
     )
 
-    st.plotly_chart(fig_missing, use_container_width=True)
+    # Lógica condicional
+    if total_missing_count == 0:
+        # Caso: No existen valores faltantes
+        st.success("No se detectaron valores faltantes en las variables seleccionadas para el periodo analizado.")
+        
+        st.info("Debido a la completitud total de los registros, no es necesario generar un gráfico de distribución de datos faltantes; en caso de que existieran, se visualizarían aquí.")
 
-    st.markdown(f"""
-    <div class="interpretation-box">
-    <p><strong>Interpretación del diagnóstico de datos faltantes:</strong> El análisis revela que {max_missing['Tipo de Gasto']} 
-    presenta la mayor proporción de datos ausentes con {max_missing['% Faltantes']:.2f}%. Esta situación puede deberse a varias 
-    razones: (1) la categoría fue creada o comenzó a reportarse sistemáticamente después de 1960, (2) hubo cambios en la 
-    metodología de clasificación del CMS que llevaron a la discontinuación o fusión de categorías, o (3) ciertos tipos de gastos 
-    no eran relevantes o medibles en períodos históricos tempranos.</p>
+        interpretacion_html = """
+        <div class="interpretation-box">
+        <h5>Interpretación de Integridad de Datos</h5>
+        <p><strong>Evaluación de Completitud:</strong> El diagnóstico confirma que todas las categorías incluidas presentan una disponibilidad continua de información a lo largo del periodo considerado, sin interrupciones ni registros ausentes.</p>
 
-    <p>Es notable que categorías como Workers' Compensation y Health Insurance muestran completitud cercana o igual al 100%, 
-    lo cual es esperado dado que son componentes fundamentales y de larga data en el sistema de salud estadounidense. Por el 
-    contrario, categorías más granulares o especializadas tienden a tener mayor proporción de datos faltantes, especialmente 
-    en años históricos. Para el análisis de series temporales y forecasting, es recomendable centrarse en categorías con alta 
-    completitud o, alternativamente, restringir el análisis temporal a los períodos donde los datos están disponibles.</p>
-    </div>
-    """, unsafe_allow_html=True)
+        <p><strong>Implicación Analítica:</strong> La ausencia de vacíos en las series permite proceder con comparaciones estadísticas directas sin aplicar imputación o ajustes para alinear periodos. Esto preserva la estructura original de la información y facilita la interpretación de los resultados posteriores.</p>
+        </div>
+        """
+
+    else:
+        # Caso: Existen valores faltantes
+        max_missing = missing_summary.iloc[0]
+        st.warning(
+            f"Se identificaron valores faltantes. La categoría con mayor afectación es "
+            f"'{max_missing['Tipo de Gasto']}' con {int(max_missing['Nulos'])} registros ausentes."
+        )
+
+        fig_missing = go.Figure()
+        fig_missing.add_trace(go.Bar(
+            x=missing_summary["Tipo de Gasto"],
+            y=missing_summary["% Nulos"],
+            marker=dict(color=missing_summary["% Nulos"], colorscale='Reds'),
+            text=missing_summary["% Nulos"].apply(lambda x: f"{x:.1f}%"),
+            textposition='outside'
+        ))
+
+        fig_missing.update_layout(
+            title="Distribución de Datos Faltantes",
+            yaxis_title="% Faltantes",
+            height=400
+        )
+
+        st.plotly_chart(fig_missing, use_container_width=True)
+
+        interpretacion_html = f"""
+        <div class="interpretation-box">
+        <h5>Análisis de Brechas de Información</h5>
+        <p>Se observa una variabilidad en la continuidad de los registros según la categoría analizada. 
+        El rubro <strong>{max_missing['Tipo de Gasto']}</strong> presenta la mayor proporción de valores faltantes 
+        ({max_missing['% Nulos']:.1f}%), lo que refleja posibles cambios en los procesos de registro o disponibilidad 
+        histórica de la información.</p>
+        </div>
+        """
+
+    # Renderizar interpretación
+    st.markdown(interpretacion_html, unsafe_allow_html=True)
 
     # 2. ANÁLISIS ESTADÍSTICO COMPARATIVO
     st.subheader("2. Análisis Estadístico Comparativo entre Categorías")
