@@ -16,28 +16,52 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ============================================
+# ESTILOS CSS - TEMA USA (Navy Blue & Red)
+# ============================================
 # CSS personalizado
 st.markdown("""
 <style>
+    /* 1. Fondo general de la aplicación */
+    .stApp {
+        background-color: #F4F6F9; /* Gris azulado muy tenue */
+    }
+
+    /* Headers principales en Azul Marino */
     .main-header {
         font-size: 2.5rem;
         font-weight: 700;
-        color: #1f2937;
+        color: #0A3161; 
         margin-bottom: 1rem;
     }
+    h1, h2, h3 {
+        color: #0A3161 !important;
+    }
+    
+    /* Caja de Contexto (Azul Marino con borde tricolor) */
     .context-box {
-        background-color: #f8f9fa;
+        background-color: #FFFFFF; 
         padding: 1.5rem;
         border-radius: 10px;
-        border-left: 5px solid #2563eb;
+        border-left: 6px solid #0A3161; /* Navy Blue */
+        border-top: 2px solid #B22234; /* Red accent top */
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Sombra suave */
         margin: 1.5rem 0;
     }
+    
+    /* Caja de Interpretación (Rojo USA) */
     .interpretation-box {
-        background-color: #ecfdf5;
+        background-color: #FFF5F5; /* Rojo muy claro */
         padding: 1.5rem;
         border-radius: 10px;
-        border-left: 5px solid #10b981;
+        border-left: 6px solid #B22234; /* Red */
         margin: 1.5rem 0;
+    }
+    
+    /* Ajuste de métricas para que resalten en el nuevo fondo */
+    div[data-testid="stMetricValue"] {
+        color: #0A3161;
+        font-weight: bold;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -86,10 +110,9 @@ def load_data():
         errors="coerce"
     )
     
-    # Quitar valores nulos
     df_melt = df_melt.dropna(subset=["Year", "Amount"])
     
-    # **CRÍTICO: Eliminar duplicados**
+    # Eliminar duplicados
     df_melt = df_melt.drop_duplicates(subset=["Expenditure_Type", "Year"], keep="first")
     
     # Asegurar que Year sea entera y ordenada
@@ -203,6 +226,11 @@ if nhe.empty:
 # SIDEBAR Y CONTROLES
 # ============================================
 
+try:
+    st.sidebar.image("medical_usa.png", use_container_width=True)
+except:
+    st.sidebar.markdown("## 🇺🇸 USA Health Data")
+
 st.sidebar.header("Configuración del Análisis")
 
 debug_mode = st.sidebar.checkbox("Modo Debug", value=False)
@@ -231,7 +259,7 @@ filtered = nhe[(nhe["Year"] >= years[0]) & (nhe["Year"] <= years[1])].copy()
 
 if debug_mode:
     st.sidebar.markdown("---")
-    st.sidebar.subheader("🔍 Diagnóstico de Datos")
+    st.sidebar.subheader(" Diagnóstico de Datos")
     
     # Mostrar categorías únicas
     st.sidebar.write(f"**Total categorías:** {filtered['Expenditure_Type'].nunique()}")
@@ -245,10 +273,17 @@ if debug_mode:
             count = len(filtered[filtered["Expenditure_Type"] == match])
             st.sidebar.write(f"- {match}: {count} registros")
 
-
 # ============================================
 # HEADER Y CONTEXTO PRINCIPAL
 # ============================================
+
+try:
+    col_left, col_center, col_right = st.columns([1, 2, 1])
+
+    with col_center:
+        st.image("usa_flag.png", width=500) 
+except:
+    st.markdown("<h1 style='text-align: center;'>🇺🇸</h1>", unsafe_allow_html=True)
 
 st.markdown('<h1 class="main-header">Análisis Avanzado del Gasto Nacional en Salud de EE. UU. (1960-2023)</h1>', unsafe_allow_html=True)
 
@@ -267,7 +302,8 @@ hasta 2023, proporcionando una perspectiva histórica de 64 años sobre la evolu
 
 <p><strong>Objetivo del análisis:</strong> Este estudio busca explorar de manera integral la evolución del gasto en salud 
 de Estados Unidos, identificando patrones históricos, tendencias emergentes y proyecciones futuras. Se emplearán técnicas 
-avanzadas de análisis estadístico, forecasting mediante múltiples metodologías, así como validación de la calidad e integridad de los datos. El análisis se centra en dos ejes principales: 
+avanzadas de análisis estadístico, forecasting mediante múltiples metodologías, así como validación de la calidad e integridad de los datos. 
+El análisis se centra en dos ejes principales: 
 el comportamiento del gasto total nacional en salud y el análisis comparativo de categorías específicas como Workers' Compensation 
 y gastos relacionados con seguros de salud.</p>
 
@@ -438,7 +474,7 @@ fig_total.add_trace(go.Scatter(
     y=total_sorted["Amount"],
     mode='lines+markers',
     name='Gasto Total',
-    line=dict(color='#2563eb', width=3),
+    line=dict(color='#0A3161', width=3), # Navy Blue
     marker=dict(size=6),
     hovertemplate='<b>Año:</b> %{x}<br><b>Monto:</b> $%{y:,.0f}M<extra></extra>'
 ))
@@ -486,7 +522,7 @@ fig_forecast.add_trace(go.Scatter(
     y=total_sorted["Amount"],
     mode='lines+markers',
     name='Datos Históricos',
-    line=dict(color='#2563eb', width=3),
+    line=dict(color='#0A3161', width=3), # Navy Blue
     marker=dict(size=6)
 ))
 
@@ -495,7 +531,7 @@ fig_forecast.add_trace(go.Scatter(
     y=ensemble,
     mode='lines+markers',
     name='Proyección Ensemble',
-    line=dict(color='#10b981', width=3, dash='dash'),
+    line=dict(color='#B22234', width=3, dash='dash'), # Red USA
     marker=dict(size=8, symbol='diamond')
 ))
 
@@ -506,7 +542,7 @@ fig_forecast.add_trace(go.Scatter(
     x=np.concatenate([future_years, future_years[::-1]]),
     y=np.concatenate([upper_bound, lower_bound[::-1]]),
     fill='toself',
-    fillcolor='rgba(16, 185, 129, 0.2)',
+    fillcolor='rgba(178, 34, 52, 0.2)', # Red transparent
     line=dict(color='rgba(255,255,255,0)'),
     name='Intervalo de confianza (±15%)'
 ))
@@ -587,15 +623,16 @@ with col1:
         df_outliers, x='Year', y='Crecimiento_Pct',
         title="Detección de Años Atípicos en el Crecimiento",
         labels={'Crecimiento_Pct': 'Crecimiento Anual (%)'},
-        color_discrete_sequence=['#2563eb']
+        color_discrete_sequence=['#0A3161'] # Navy
     )
     # Marcar outliers en rojo
     if not outliers.empty:
         fig_out.add_trace(go.Scatter(
             x=outliers['Year'], y=outliers['Crecimiento_Pct'],
             mode='markers', name='Anomalía',
-            marker=dict(color='red', size=12, symbol='x')
+            marker=dict(color='#B22234', size=12, symbol='x') # Red
         ))
+    
     # Líneas de umbral
     fig_out.add_hline(y=upper_bound, line_dash="dash", line_color="gray", annotation_text="Límite Superior")
     fig_out.add_hline(y=lower_bound, line_dash="dash", line_color="gray", annotation_text="Límite Inferior")
@@ -745,8 +782,7 @@ else:
         interpretacion_html = f"""
         <div class="interpretation-box">
         <h5>Análisis de Brechas de Información</h5>
-        <p>Se observa una variabilidad en la continuidad de los registros según la categoría analizada. 
-        El rubro <strong>{max_missing['Tipo de Gasto']}</strong> presenta la mayor proporción de valores faltantes 
+        <p>Se observa una variabilidad en la continuidad de los registros según la categoría analizada. El rubro <strong>{max_missing['Tipo de Gasto']}</strong> presenta la mayor proporción de valores faltantes 
         ({max_missing['% Nulos']:.1f}%), lo que refleja posibles cambios en los procesos de registro o disponibilidad 
         histórica de la información.</p>
         </div>
@@ -869,6 +905,9 @@ else:
     if selected_vars:
         sub_filtered = sub_nhe[sub_nhe["Expenditure_Type"].isin(selected_vars)].copy()
         
+        # USA Color Sequence for comparisons
+        usa_colors = ['#0A3161', '#B22234', '#708090', '#4682B4', '#8B0000', '#A9A9A9', '#000080']
+
         # Gráfico de líneas comparativo
         fig_related = px.line(
             sub_filtered,
@@ -877,7 +916,8 @@ else:
             color="Expenditure_Type",
             title="Evolución Temporal Comparativa de Categorías Seleccionadas",
             markers=True,
-            line_shape="linear"
+            line_shape="linear",
+            color_discrete_sequence=usa_colors # USA Palette
         )
         
         fig_related.update_layout(
@@ -904,7 +944,8 @@ else:
             x="Year",
             y="Amount",
             color="Expenditure_Type",
-            title="Distribución Proporcional del Gasto (Área Apilada)"
+            title="Distribución Proporcional del Gasto (Área Apilada)",
+            color_discrete_sequence=usa_colors # USA Palette
         )
         
         fig_area.update_layout(
@@ -932,14 +973,17 @@ else:
             
             fig_prop = go.Figure()
             
-            for col in prop_data.columns:
+            for i, col in enumerate(prop_data.columns):
+                # Cycle through colors manually
+                color = usa_colors[i % len(usa_colors)]
                 fig_prop.add_trace(go.Scatter(
                     x=prop_data.index,
                     y=prop_data[col],
                     mode='lines',
                     name=col,
                     stackgroup='one',
-                    groupnorm='percent'
+                    groupnorm='percent',
+                    line=dict(color=color)
                 ))
             
             fig_prop.update_layout(
@@ -1012,7 +1056,7 @@ else:
                     y=cat_data["Amount"],
                     mode='lines+markers',
                     name='Datos Históricos',
-                    line=dict(color='#2563eb', width=3),
+                    line=dict(color='#0A3161', width=3), # Navy
                     marker=dict(size=6)
                 ))
                 
@@ -1022,7 +1066,7 @@ else:
                     y=ensemble_cat,
                     mode='lines+markers',
                     name='Proyección Ensemble',
-                    line=dict(color='#10b981', width=3, dash='dash'),
+                    line=dict(color='#B22234', width=3, dash='dash'), # Red
                     marker=dict(size=8, symbol='diamond')
                 ))
                 
@@ -1034,7 +1078,7 @@ else:
                     x=np.concatenate([future_years_cat, future_years_cat[::-1]]),
                     y=np.concatenate([upper_bound_cat, lower_bound_cat[::-1]]),
                     fill='toself',
-                    fillcolor='rgba(16, 185, 129, 0.2)',
+                    fillcolor='rgba(178, 34, 52, 0.2)', # Red transparent
                     line=dict(color='rgba(255,255,255,0)'),
                     name='Intervalo de confianza (±15%)'
                 ))
@@ -1165,6 +1209,13 @@ labels = {cluster_map[0]: 'Nicho / Bajo Impacto', cluster_map[1]: 'Crecimiento M
 df_features['Cluster_Label'] = df_features['Cluster'].map(labels)
 
 # 4. Visualización
+# Custom mapping for colors based on clusters
+color_map = {
+    'Motores Principales': '#0A3161', # Navy
+    'Crecimiento Medio': '#B22234', # Red
+    'Nicho / Bajo Impacto': '#708090' # Slate Gray
+}
+
 fig_cluster = px.scatter(
     df_features,
     x='CAGR',
@@ -1179,7 +1230,7 @@ fig_cluster = px.scatter(
         'Volumen_Promedio': 'Gasto Promedio (Log Scale)',
         'Cluster_Label': 'Segmento Detectado'
     },
-    color_discrete_sequence=px.colors.qualitative.Bold
+    color_discrete_map=color_map # Custom USA theme mapping
 )
 
 fig_cluster.update_traces(textposition='top center')
@@ -1217,7 +1268,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.markdown("""
-    <div style='background-color: #f0fdf4; padding: 20px; border-radius: 10px; border-left: 5px solid #10b981;'>
+    <div style='background-color: #F0F4F8; padding: 20px; border-radius: 10px; border-left: 5px solid #0A3161;'>
     <h5>Fortalezas del Dataset y del Análisis</h5>
     <ul>
     <li><strong>Cobertura temporal extensa:</strong> 64 años de datos históricos permiten identificar tendencias de largo plazo</li>
@@ -1233,7 +1284,7 @@ with col1:
 
 with col2:
     st.markdown("""
-    <div style='background-color: #fef3c7; padding: 20px; border-radius: 10px; border-left: 5px solid #f59e0b;'>
+    <div style='background-color: #FFF5F5; padding: 20px; border-radius: 10px; border-left: 5px solid #B22234;'>
     <h5>Limitaciones y Consideraciones</h5>
     <ul>
     <li><strong>Valores nominales:</strong> Los datos no están ajustados por inflación (valores corrientes)</li>
