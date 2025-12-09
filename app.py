@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -243,6 +245,7 @@ if debug_mode:
             count = len(filtered[filtered["Expenditure_Type"] == match])
             st.sidebar.write(f"- {match}: {count} registros")
 
+
 # ============================================
 # HEADER Y CONTEXTO PRINCIPAL
 # ============================================
@@ -253,9 +256,22 @@ st.markdown("""
 <div class="context-box">
 <h3>Contexto del Análisis</h3>
 <p><strong>Fuente de datos:</strong> Centers for Medicare & Medicaid Services (CMS) - National Health Expenditure Accounts (NHE)</p>
-<p>Los National Health Expenditure Accounts (NHE) miden el gasto anual en atención médica en los Estados Unidos desde 1960 hasta 2023.</p>
+
+<p>Los National Health Expenditure Accounts (NHE) son un conjunto de datos oficiales que miden el gasto anual en 
+atención médica en los Estados Unidos. Estos datos son recopilados y mantenidos por los Centers for Medicare & Medicaid 
+Services (CMS) y representan la medida más completa y autorizada del gasto en salud del país. El dataset abarca desde 1960 
+hasta 2023, proporcionando una perspectiva histórica de 64 años sobre la evolución de los costos de atención médica.</p>
+
 <p><strong>Período analizado:</strong> 1960 - 2023 (64 años de datos históricos)</p>
 <p><strong>Unidad de medida:</strong> Millones de dólares estadounidenses (USD) en valores corrientes</p>
+
+<p><strong>Objetivo del análisis:</strong> Este estudio busca explorar de manera integral la evolución del gasto en salud 
+de Estados Unidos, identificando patrones históricos, tendencias emergentes y proyecciones futuras. Se emplearán técnicas 
+avanzadas de análisis estadístico, forecasting mediante múltiples metodologías, así como validación de la calidad e integridad de los datos. El análisis se centra en dos ejes principales: 
+el comportamiento del gasto total nacional en salud y el análisis comparativo de categorías específicas como Workers' Compensation 
+y gastos relacionados con seguros de salud.</p>
+
+<p><a href="https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/NationalHealthExpendData/NationalHealthAccountsHistorical" target="_blank">Enlace oficial al dataset del CMS</a></p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -542,6 +558,70 @@ st.markdown("""
     </p>
     <p>
         <strong>Conclusión del Pronóstico:</strong> Las proyecciones apuntan hacia un escenario de crecimiento más lento en comparación con la trayectoria histórica. Aunque el gasto continúa aumentando en términos nominales, la velocidad a la que lo hace se reduce, lo que se refleja en un crecimiento acumulado cercano al 13.6% durante la próxima década. El intervalo de confianza del 95% (área sombreada en el gráfico) muestra el rango de valores plausibles según los modelos utilizados y resume la incertidumbre inherente a las proyecciones de largo plazo.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+
+st.subheader("Análisis de Anomalías (Detección de Outliers)")
+st.markdown("Se utiliza el método del **Rango Intercuartil (IQR)** sobre la tasa de crecimiento anual para detectar años con comportamientos atípicos.")
+
+# Calcular crecimiento anual
+df_outliers = total_sorted.copy()
+df_outliers['Crecimiento_Pct'] = df_outliers['Amount'].pct_change() * 100
+df_outliers = df_outliers.dropna()
+
+# Calcular IQR
+Q1 = df_outliers['Crecimiento_Pct'].quantile(0.25)
+Q3 = df_outliers['Crecimiento_Pct'].quantile(0.75)
+IQR = Q3 - Q1
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+# Identificar outliers
+outliers = df_outliers[(df_outliers['Crecimiento_Pct'] < lower_bound) | (df_outliers['Crecimiento_Pct'] > upper_bound)]
+
+col1, col2 = st.columns([3, 1])
+with col1:
+    fig_out = px.scatter(
+        df_outliers, x='Year', y='Crecimiento_Pct',
+        title="Detección de Años Atípicos en el Crecimiento",
+        labels={'Crecimiento_Pct': 'Crecimiento Anual (%)'},
+        color_discrete_sequence=['#2563eb']
+    )
+    # Marcar outliers en rojo
+    if not outliers.empty:
+        fig_out.add_trace(go.Scatter(
+            x=outliers['Year'], y=outliers['Crecimiento_Pct'],
+            mode='markers', name='Anomalía',
+            marker=dict(color='red', size=12, symbol='x')
+        ))
+    # Líneas de umbral
+    fig_out.add_hline(y=upper_bound, line_dash="dash", line_color="gray", annotation_text="Límite Superior")
+    fig_out.add_hline(y=lower_bound, line_dash="dash", line_color="gray", annotation_text="Límite Inferior")
+    st.plotly_chart(fig_out, use_container_width=True)
+
+with col2:
+    st.write("**Años detectados como anómalos:**")
+    if not outliers.empty:
+        st.dataframe(outliers[['Year', 'Crecimiento_Pct']].style.format({'Crecimiento_Pct': '{:.2f}%'}))
+    else:
+        st.success("No se detectaron anomalías estadísticas severas.")
+
+st.markdown("""
+<div class="interpretation-box">
+    <h5>Análisis de Detección de Valores Atípicos</h5>
+    <p>
+        <strong>Fundamento Estadístico (Rango Intercuartílico):</strong> Para evaluar la estabilidad de la serie temporal, se utilizó el criterio del Rango Intercuartílico (IQR). Este procedimiento define un intervalo basado en el comportamiento del 50% central de los datos, estableciendo límites superiores e inferiores a partir del tercer cuartil y del primer cuartil, respectivamente.
+    </p>
+    <p>
+        <strong>Resultados del Análisis:</strong> En el gráfico de dispersión, todas las tasas de crecimiento anual entre 1960 y 2023 se encuentran dentro de los límites definidos por el IQR. En términos prácticos, no se identificaron observaciones que excedan los umbrales establecidos por este criterio.
+    </p>
+    <p>
+        <strong>Implicaciones Analíticas:</strong><br>
+        1. <strong>Comportamiento Estable en el Tiempo:</strong> La ausencia de puntos fuera del rango sugiere que las variaciones anuales del indicador siguen un patrón relativamente consistente, sin episodios que alteren de manera abrupta la dinámica de crecimiento.<br>
+        2. <strong>Evolución de la Volatilidad:</strong> Se observa una reducción progresiva en la dispersión de las tasas de crecimiento. Durante las primeras décadas del periodo analizado, los valores presentaban una variabilidad mayor, mientras que en años recientes tienden a concentrarse en un rango más estrecho.<br>
+        3. <strong>Relevancia para Etapas Posteriores del Estudio:</strong> La ausencia de valores atípicos facilita el uso de modelos estadísticos y comparativos, ya que disminuye el riesgo de distorsión por observaciones extremas.
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -1024,6 +1104,101 @@ else:
                 
             else:
                 st.warning(f"La categoría {forecast_category} no tiene suficientes datos históricos (mínimo 10 puntos) para generar proyecciones confiables.")
+
+st.subheader("4. Segmentación de Categorías (Clustering K-Means)")
+st.markdown("""
+<div class="interpretation-box">
+    <p><strong>Objetivo de la Segmentación:</strong> Dado que comparar múltiples líneas de tiempo visualmente puede ser complejo, utilizamos un algoritmo de Aprendizaje No Supervisado (K-Means)    para agrupar las categorías de gasto en "clusters" según su comportamiento financiero estructural.
+    <br>Se analizan dos dimensiones clave:</p>
+    <ul>
+        <li><strong>Magnitud del Gasto (Eje Y):</strong> ¿Cuánto dinero representa esta categoría? (Escala Logarítmica).</li>
+        <li><strong>Dinámica de Crecimiento (Eje X):</strong> ¿Qué tan rápido crece anualmente en promedio? (CAGR).</li>
+    </ul>
+</div>
+""", unsafe_allow_html=True)
+
+# 1. Preparar Dataset de Características (Features) por Categoría
+categories = sub_nhe['Expenditure_Type'].unique()
+features_list = []
+
+for cat in categories:
+    df_cat = sub_nhe[sub_nhe['Expenditure_Type'] == cat].sort_values('Year')
+    if not df_cat.empty:
+        # Calcular CAGR (Crecimiento Anual Compuesto)
+        first_val = df_cat['Amount'].iloc[0]
+        last_val = df_cat['Amount'].iloc[-1]
+        periods = len(df_cat)
+        if first_val > 0:
+            cagr = ((last_val / first_val) ** (1/periods) - 1) * 100
+        else:
+            cagr = 0
+            
+        # Calcular Volumen Promedio (Logaritmo para manejar escalas)
+        avg_amount = df_cat['Amount'].mean()
+        
+        # Calcular Volatilidad (Coeficiente de Variación)
+        volatility = (df_cat['Amount'].std() / df_cat['Amount'].mean()) * 100 if df_cat['Amount'].mean() != 0 else 0
+        
+        features_list.append({
+            'Categoria': cat,
+            'CAGR': cagr,
+            'Volumen_Promedio': avg_amount,
+            'Volatilidad': volatility
+        })
+
+df_features = pd.DataFrame(features_list)
+
+# 2. Normalizar Datos (StandardScaler)
+# Es vital porque el Volumen está en millones y el CAGR en porcentajes
+scaler = StandardScaler()
+X = df_features[['CAGR', 'Volumen_Promedio']]
+X_scaled = scaler.fit_transform(X)
+
+# 3. Aplicar K-Means (Definimos 3 clusters teóricos: Bajo, Medio, Alto impacto)
+kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+df_features['Cluster'] = kmeans.fit_predict(X_scaled)
+
+# Renombrar clusters para que tengan sentido (Esto es un truco visual)
+# Ordenamos por volumen promedio para saber cuál es el "Grande"
+cluster_map = df_features.groupby('Cluster')['Volumen_Promedio'].mean().sort_values().index
+labels = {cluster_map[0]: 'Nicho / Bajo Impacto', cluster_map[1]: 'Crecimiento Medio', cluster_map[2]: 'Motores Principales'}
+df_features['Cluster_Label'] = df_features['Cluster'].map(labels)
+
+# 4. Visualización
+fig_cluster = px.scatter(
+    df_features,
+    x='CAGR',
+    y='Volumen_Promedio',
+    color='Cluster_Label',
+    size='Volatilidad', # El tamaño de la burbuja es qué tan inestable es
+    text='Categoria',
+    log_y=True, # Escala logarítmica vital para ver datos pequeños y grandes juntos
+    title="Matriz de Segmentación de Gastos (Growth-Share Matrix)",
+    labels={
+        'CAGR': 'Tasa de Crecimiento Promedio Anual (%)',
+        'Volumen_Promedio': 'Gasto Promedio (Log Scale)',
+        'Cluster_Label': 'Segmento Detectado'
+    },
+    color_discrete_sequence=px.colors.qualitative.Bold
+)
+
+fig_cluster.update_traces(textposition='top center')
+fig_cluster.update_layout(height=600, template="plotly_white")
+
+st.plotly_chart(fig_cluster, use_container_width=True)
+
+st.markdown("""
+<div class="interpretation-box">
+    <h5>Análisis de la Matriz de Segmentación (Resultados K-Means)</h5>
+    <p>El algoritmo ha detectado tres comportamientos estructurales distintos en el financiamiento de la salud:</p>
+    <ul>
+        <li><strong> Motores Principales (Cluster de Alto Volumen):</strong> Ubicados en la cima del gráfico (Eje Y > 1M). Incluye categorías agregadas como <em>Total National Health Expenditures</em> y <em>Private Health Insurance</em>. Estos rubros definen la inercia del sistema; poseen un crecimiento estable (~7%) pero, debido a su inmensa masa monetaria, cualquier variación porcentual aquí representa billones de dólares en impacto fiscal.</li>
+        <li><strong> Sectores Dinámicos / Crecimiento Acelerado:</strong> Representados por las burbujas moradas. Aunque su volumen es intermedio, este grupo presenta las tasas de crecimiento más agresivas del sistema (Eje X entre 7% y 10%), destacando rubros como <em>Home Health Care</em> y <em>Net Cost of Health Insurance</em>. Esto señala un cambio en la estructura de costos hacia la atención domiciliaria y los costos administrativos de los seguros.</li>
+        <li><strong> Nicho y Bajo Impacto:</strong> Ubicados en la zona inferior izquierda. Aquí se clasifica nuestra variable de interés, Workers' Compensation, junto con programas específicos como <em>Maternal/Child Health</em>. Se caracterizan por volúmenes financieros comparativamente bajos y tasas de crecimiento más moderadas (2% - 5%). Esto confirma que la compensación laboral es un componente estable y acotado, con menor presión inflacionaria que el resto del sistema sanitario.</li>
+    </ul>
+</div>
+""", unsafe_allow_html=True)
+
 st.markdown("---")
 
 # ============================================
@@ -1158,7 +1333,7 @@ st.markdown("""
 <div style='text-align: center; color: #666; padding: 30px; background-color: #f8f9fa; border-radius: 10px;'>
 <h4>Fundamentos para el Análisis de Datos (FACD)</h4>
 <p><strong>Desarrollado por:</strong> Juan Sebastián Fajardo Acevedo y Miguel Ángel Hernández Vargas</p>
-<p><strong>Docente:</strong> Ana María Gómez Lamus, M.Sc. en Estadística</p>
+<p><strong>Docente:</strong> Ana María Gómez Lamus</p>
 <p><strong>Institución:</strong> Universidad Escuela Colombiana De Ingeniería Julio Garavito</p>
 <p><strong>Año:</strong> 2025</p>
 <p><strong>Datos actualizados al:</strong> {}</p>
