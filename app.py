@@ -1012,27 +1012,12 @@ st.markdown("""
 <div class="context-box">
 <h4>Hallazgos Clave del Análisis</h4>
 <ol>
-    <li><strong>Crecimiento exponencial sostenido del gasto total:</strong> El gasto nacional en salud ha crecido de $253 mil 
-    millones en 1980 a $4.87 billones en 2023, con una CAGR del 6.95%. Las proyecciones sugieren que esta tendencia continuará, 
-    aunque con moderación gradual de las tasas de crecimiento.</li>
-    <li><strong>Heterogeneidad significativa entre categorías:</strong> Workers' Compensation representa una fracción 
-    relativamente pequeña y estable del gasto total, mientras que seguros privados y consumo médico han experimentado 
-    expansión acelerada. Esta divergencia refleja dinámicas específicas de cada sector.</li>
-
-    <li><strong>Patrones de completitud de datos revelan historia institucional:</strong> La presencia de datos faltantes 
-    en ciertas categorías no es aleatoria, sino que refleja la evolución histórica de la clasificación de gastos del CMS 
-    y cambios en políticas de reporte.</li>
-
-    <li><strong>Tres fases históricas identificables:</strong> (1) 1960-1980: establecimiento de Medicare/Medicaid y 
-    crecimiento moderado, (2) 1980-2010: expansión acelerada con tecnología médica y envejecimiento, (3) 2010-2023: 
-    crecimiento sostenido con desaceleración relativa post-ACA.</li>
-
-    <li><strong>Proyecciones indican continuidad con moderación:</strong> Los modelos ensemble proyectan tasas de crecimiento 
-    futuras ligeramente inferiores al promedio histórico, sugiriendo efectos de políticas de contención de costos y 
-    posible estabilización demográfica.</li>
-
-    <li><strong>Necesidad de análisis multifacético:</strong> El gasto en salud no puede entenderse mediante una sola métrica; 
-    requiere análisis desagregado, comparativo, y contextualizado para capturar su complejidad inherente.</li>
+    <li><strong>Crecimiento exponencial sostenido del gasto total:</strong> El gasto nacional en salud ha crecido de $253 mil millones en 1980 a $4.87 billones en 2023, con una CAGR del 6.95%. Las proyecciones sugieren que esta tendencia continuará, aunque con moderación gradual de las tasas de crecimiento.</li>
+    <li><strong>Heterogeneidad significativa entre categorías:</strong> Workers' Compensation representa una fracción relativamente pequeña y estable del gasto total, mientras que seguros privados y consumo médico han experimentado expansión acelerada. Esta divergencia refleja dinámicas específicas de cada sector.</li>
+    <li><strong>Patrones de completitud de datos revelan historia institucional:</strong> La presencia de datos faltantes en ciertas categorías no es aleatoria, sino que refleja la evolución histórica de la clasificación de gastos del CMS y cambios en políticas de reporte.</li>
+    <li><strong>Tres fases históricas identificables:</strong> (1) 1960-1980: establecimiento de Medicare/Medicaid y crecimiento moderado, (2) 1980-2010: expansión acelerada con tecnología médica y envejecimiento, (3) 2010-2023: crecimiento sostenido con desaceleración relativa post-ACA.</li>
+    <li><strong>Proyecciones indican continuidad con moderación:</strong> Los modelos ensemble proyectan tasas de crecimiento futuras ligeramente inferiores al promedio histórico, sugiriendo efectos de políticas de contención de costos y posible estabilización demográfica.</li>
+    <li><strong>Necesidad de análisis multifacético:</strong> El gasto en salud no puede entenderse mediante una sola métrica; requiere análisis desagregado, comparativo, y contextualizado para capturar su complejidad inherente.</li>
 </ol>
 </div>
 """, unsafe_allow_html=True)
@@ -1108,7 +1093,7 @@ st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666; padding: 30px; background-color: #f8f9fa; border-radius: 10px;'>
 <h4>Fundamentos para el Análisis de Datos (FACD)</h4>
-<p><strong>Desarrollado por:</strong> Juan Sebastián Fajardo Acevedo y Miguel Ángel Vargas Hernández</p>
+<p><strong>Desarrollado por:</strong> Juan Sebastián Fajardo Acevedo y Miguel Ángel Hernández Vargas</p>
 <p><strong>Docente:</strong> Ana María Gómez Lamus, M.Sc. en Estadística</p>
 <p><strong>Institución:</strong> Universidad Escuela Colombiana De Ingeniería Julio Garavito</p>
 <p><strong>Año:</strong> 2025</p>
