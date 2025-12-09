@@ -10,7 +10,7 @@ Este repositorio contiene la preparación, limpieza y análisis de datos del **N
 **Institución:** Universidad Escuela Colombiana de Ingeniería Julio Garavito  
 **Fuente de Datos:** Centers for Medicare & Medicaid Services (CMS) - [NHE2023]
 
-El objetivo principal del taller fue aplicar técnicas de **Data Quality** y **Data Wrangling** para transformar datos crudos en información de valor, siguiendo el ciclo de vida de la ciencia de datos. Se trabajó con el dataset histórico de gastos en salud de EE. UU. (1960-2023), enfocándose en la detección de anomalías, tratamiento de valores nulos y análisis de tendencias[cite: 485].
+El objetivo principal del taller fue aplicar técnicas de **Data Quality** y **Data Wrangling** para transformar datos crudos en información de valor, siguiendo el ciclo de vida de la ciencia de datos. Se trabajó con el dataset histórico de gastos en salud de EE. UU. (1960-2023), enfocándose en la detección de anomalías, tratamiento de valores nulos y análisis de tendencias.
 
 ---
 
@@ -20,16 +20,16 @@ El desarrollo se centró en resolver dos retos principales planteados en la guí
 
 ### 1. Primer Reto: Análisis del Gasto Total (Total National Health Expenditures)
 El objetivo fue definir un dataframe específico para esta variable y realizar:
-* **Diagnóstico de Calidad:** Evaluar integridad y completitud del subconjunto[cite: 487].
-* **Resúmenes Estadísticos:** Cálculo de métricas clave (Media, Desviación, CAGR)[cite: 487].
-* **Visualización:** Representación gráfica de la tendencia temporal (1960-2023)[cite: 488].
-* **Interpretación:** Análisis del crecimiento sostenido del gasto[cite: 489].
+* **Diagnóstico de Calidad:** Evaluar integridad y completitud del subconjunto.
+* **Resúmenes Estadísticos:** Cálculo de métricas clave.
+* **Visualización:** Representación gráfica de la tendencia temporal (1960-2023).
+* **Interpretación:** Análisis del crecimiento sostenido del gasto.
 
 ### 2. Segundo Reto: Análisis Comparativo (Workers' Compensation y Variables Relacionadas)
 El objetivo fue explorar variables específicas dentro del rango de "Health Consumption Expenditures" a "Net Cost of Health Insurance", con énfasis en **Workers' Compensation**:
-* **Diagnóstico de Datos Faltantes:** Identificación de variables con mayor cantidad de vacíos[cite: 491, 492].
-* **Análisis con/sin Imputación:** Comparación de resúmenes estadísticos incluyendo y excluyendo valores nulos[cite: 493].
-* **Representación Gráfica:** Visualización comparativa de múltiples categorías relacionadas con seguros y consumo[cite: 494].
+* **Diagnóstico de Datos Faltantes:** Identificación de variables con mayor cantidad de vacíos.
+* **Análisis con/sin Imputación:** Comparación de resúmenes estadísticos incluyendo y excluyendo valores nulos.
+* **Representación Gráfica:** Visualización comparativa de múltiples categorías relacionadas con seguros y consumo.
 
 ---
 
