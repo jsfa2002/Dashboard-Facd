@@ -10,7 +10,7 @@ Este repositorio contiene la preparación, limpieza y análisis de datos del **N
 **Institución:** Universidad Escuela Colombiana de Ingeniería Julio Garavito  
 **Fuente de Datos:** Centers for Medicare & Medicaid Services (CMS) - [NHE2023]
 
-El objetivo principal del taller fue aplicar técnicas de **Data Quality** y **Data Wrangling** para transformar datos crudos en información de valor, siguiendo el ciclo de vida de la ciencia de datos. Se trabajó con el dataset histórico de gastos en salud de EE. UU. (1960-2023), enfocándose en la detección de anomalías, tratamiento de valores nulos y análisis de tendencias.
+El objetivo principal del taller fue aplicar técnicas para evaluar, limpiar y transformar datos crudos en información útil, siguiendo el ciclo de vida de la ciencia de datos. Se trabajó con el dataset histórico de gastos en salud de EE. UU. (1960-2023), enfocándose en la detección de anomalías, tratamiento de valores nulos y análisis de tendencias.
 
 ---
 
